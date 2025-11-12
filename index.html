@@ -1,0 +1,1595 @@
+<!doctype html>
+<html lang="zh-Hant">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+    <title>文字貪食蛇｜聖誕祝福版 v1.0</title>
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg">
+    <link rel="alternate icon" href="./favicon.ico">
+    <style>
+        html,
+        body {
+            margin: 0;
+            height: 100%;
+            background: 
+                radial-gradient(ellipse at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 20%, rgba(255, 119, 198, 0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at 40% 40%, rgba(120, 158, 198, 0.2) 0%, transparent 50%),
+                linear-gradient(135deg, #0F0F23 0%, #191970 25%, #000080 50%, #191970 75%, #0F0F23 100%);
+            font-family: "LINE Seed TW_OTF Bold", "LINE Seed TW_OTF", "LINE Seed TW_OTF Regular", "LINE Seed TW_OTF ExtraBold", "LINE Seed TW OTF Bold", "LINESeedTW-Bold", "LINE Seed TW Bold", "LINE Seed TW", "PingFang TC", "Microsoft JhengHei", "Noto Sans TC", system-ui, -apple-system, sans-serif;
+            color: #FFD700;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* 聖誕夜空多層星星背景 */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: 
+                /* 大星星層 */
+                radial-gradient(3px 3px at 25px 35px, rgba(255, 255, 255, 0.9), transparent),
+                radial-gradient(2px 2px at 85px 75px, rgba(255, 255, 255, 0.8), transparent),
+                radial-gradient(3px 3px at 150px 45px, rgba(255, 255, 255, 0.85), transparent),
+                radial-gradient(2px 2px at 200px 85px, rgba(255, 255, 255, 0.7), transparent),
+                /* 中等星星層 */
+                radial-gradient(2px 2px at 50px 60px, rgba(255, 255, 255, 0.6), transparent),
+                radial-gradient(1.5px 1.5px at 120px 25px, rgba(255, 255, 255, 0.7), transparent),
+                radial-gradient(2px 2px at 180px 70px, rgba(255, 255, 255, 0.65), transparent),
+                radial-gradient(1.5px 1.5px at 10px 80px, rgba(255, 255, 255, 0.6), transparent),
+                /* 小星星層 */
+                radial-gradient(1px 1px at 70px 20px, rgba(255, 255, 255, 0.5), transparent),
+                radial-gradient(1px 1px at 160px 90px, rgba(255, 255, 255, 0.4), transparent),
+                radial-gradient(1px 1px at 30px 50px, rgba(255, 255, 255, 0.45), transparent),
+                radial-gradient(1px 1px at 190px 30px, rgba(255, 255, 255, 0.5), transparent),
+                /* 金色星塵 */
+                radial-gradient(1px 1px at 100px 10px, rgba(255, 215, 0, 0.4), transparent),
+                radial-gradient(1px 1px at 40px 90px, rgba(255, 215, 0, 0.35), transparent),
+                radial-gradient(1px 1px at 170px 55px, rgba(255, 215, 0, 0.3), transparent);
+            background-repeat: repeat;
+            background-size: 220px 120px;
+            animation: twinkleStars 6s ease-in-out infinite alternate;
+            pointer-events: none;
+            z-index: -2;
+        }
+
+        /* 星光閃爍動畫 */
+        @keyframes twinkleStars {
+            0% { 
+                opacity: 0.6; 
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.9;
+                transform: scale(1.05);
+            }
+            100% { 
+                opacity: 0.7; 
+                transform: scale(1.02);
+            }
+        }
+
+        /* 雪花飄落背景 */
+        body::after {
+            content: '❄ ❅ ❆ ❄ ❅ ❆ ❄ ❅ ❆ ❄ ❅ ❆ ❄ ❅ ❆ ❄ ❅ ❆ ❄ ❅ ❆ ❄ ❅ ❆ ❄ ❅ ❆ ❄ ❅ ❆ ❄ ❅ ❆ ❄ ❅ ❆';
+            position: fixed;
+            top: -60px;
+            left: 0;
+            right: 0;
+            height: calc(100vh + 120px);
+            font-size: 18px;
+            color: rgba(255, 255, 255, 0.5);
+            animation: gentleSnowfall 18s linear infinite;
+            pointer-events: none;
+            z-index: -1;
+            white-space: nowrap;
+            overflow: hidden;
+            letter-spacing: 25px;
+            text-shadow: 0 0 8px rgba(255, 255, 255, 0.4);
+            opacity: 0.8;
+        }
+
+        /* 溫柔雪花飄落動畫 */
+        @keyframes gentleSnowfall {
+            0% { 
+                transform: translateY(-120px) translateX(-10px) rotate(0deg); 
+                opacity: 0;
+            }
+            5% {
+                opacity: 0.8;
+            }
+            50% {
+                transform: translateY(50vh) translateX(10px) rotate(180deg);
+                opacity: 0.6;
+            }
+            95% {
+                opacity: 0.4;
+            }
+            100% { 
+                transform: translateY(calc(100vh + 80px)) translateX(30px) rotate(360deg); 
+                opacity: 0;
+            }
+        }
+
+        /* 聖誕裝飾層 - 遠景光暈 */
+        body {
+            position: relative;
+        }
+        
+        body:has(#start-screen:not([style*="display: none"])) {
+            background: 
+                radial-gradient(ellipse at 20% 80%, rgba(120, 119, 198, 0.4) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 20%, rgba(255, 119, 198, 0.2) 0%, transparent 60%),
+                radial-gradient(ellipse at 40% 40%, rgba(120, 158, 198, 0.3) 0%, transparent 60%),
+                radial-gradient(ellipse at 60% 70%, rgba(255, 215, 0, 0.1) 0%, transparent 50%),
+                linear-gradient(135deg, #0F0F23 0%, #191970 25%, #000080 50%, #191970 75%, #0F0F23 100%);
+        }
+
+        #hud {
+            position: fixed;
+            left: 0;
+            right: 0;
+            top: 0;
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            padding: 6px 0;
+            color: #FFD700; /* 金色 HUD 文字 */
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+            mix-blend-mode: normal
+        }
+
+        #pad {
+            position: fixed;
+            left: 50%;
+            bottom: 6px;
+            transform: translateX(-50%);
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            grid-template-rows: 1fr 1fr 1fr;
+            gap: 4px;
+            width: 180px;
+            height: 180px;
+        }
+
+        #pad button {
+            font-size: 24px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 215, 0, 0.3);
+            background: linear-gradient(45deg, #013, #025);
+            color: #FFD700;
+            touch-action: manipulation;
+            user-select: none;
+            transition: all 0.3s ease;
+            box-shadow: 
+                0 2px 8px rgba(0, 0, 0, 0.2),
+                inset 0 1px 2px rgba(255, 215, 0, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            position: relative;
+            overflow: hidden;
+        }
+
+        #pad button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 215, 0, 0.2), transparent);
+            transition: left 0.5s ease;
+        }
+
+        #pad button:hover::before {
+            left: 100%;
+        }
+
+        #pad button:hover {
+            border-color: rgba(255, 215, 0, 0.6);
+            box-shadow: 
+                0 4px 12px rgba(255, 215, 0, 0.3),
+                inset 0 1px 2px rgba(255, 215, 0, 0.2);
+            transform: translateY(-2px);
+        }
+
+        #pad button:active {
+            transform: scale(0.95) translateY(0);
+            background: linear-gradient(45deg, #025, #037);
+            box-shadow: 
+                0 1px 4px rgba(0, 0, 0, 0.3),
+                inset 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        /* 十字排列：上方按鈕 */
+        #U {
+            grid-column: 2;
+            grid-row: 1;
+        }
+
+        /* 十字排列：左側按鈕 */
+        #L {
+            grid-column: 1;
+            grid-row: 2;
+        }
+
+        /* 十字排列：右側按鈕 */
+        #R {
+            grid-column: 3;
+            grid-row: 2;
+        }
+
+        /* 十字排列：下方按鈕 */
+        #D {
+            grid-column: 2;
+            grid-row: 3;
+        }
+
+        /* 中心圓點（裝飾用） */
+        #pad::before {
+            content: "⊙";
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            color: #013;
+            font-size: 20px;
+            opacity: 0.3;
+            pointer-events: none;
+        }
+
+        canvas {
+            display: block;
+            max-width: 100%;
+            height: auto;
+        }
+        
+        /* 遊戲畫布特定樣式 - 為增強聖誕燈預留更多空間 */
+        canvas:not(#nutritionChart) {
+            margin: 80px auto 130px auto;  /* 大幅增加邊距為聖誕燈預留空間 */
+            box-shadow: none;  /* 移除陰影避免遮擋聖誕燈 */
+            border-radius: 15px;
+            background: rgba(15, 15, 35, 0.02);  /* 更低的背景透明度讓燈泡更突出 */
+            backdrop-filter: blur(1px);
+            image-rendering: pixelated;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: crisp-edges;
+            padding: 40px;  /* 大幅增加內部padding為燈泡留更多空間 */
+            overflow: visible;  /* 允許燈泡超出畫布邊界 */
+        }
+
+        #over {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, .6);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+        #card {
+            background: #fff;
+            border-radius: 20px;
+            padding: 30px 25px;
+            width: min(90%, 480px);
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            position: relative;
+            z-index: 2001;
+        }
+
+        #card h2 {
+            margin: 0 0 20px 0;
+            font-size: 2.2em;
+            color: #013;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        #list {
+            font-size: 18px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin: 20px 0 25px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            border-left: 4px solid #FFD700;
+        }
+
+        .chip {
+            padding: 6px 12px;
+            border-radius: 999px;
+            background: linear-gradient(45deg, #B8860B, #DAA520);
+            color: white;
+            font-weight: bold;
+            font-size: 16px;
+            box-shadow: 
+                0 2px 8px rgba(0, 0, 0, 0.2),
+                0 4px 12px rgba(255, 215, 0, 0.3),
+                inset 0 1px 2px rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+        }
+
+        .chip:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(255, 215, 0, 0.4);
+        }
+
+        /* 詞句分組樣式 */
+        .phrase-group {
+            margin: 15px 0;
+            padding: 12px;
+            background: linear-gradient(135deg, 
+                rgba(255, 215, 0, 0.05) 0%, 
+                rgba(255, 255, 255, 0.1) 50%, 
+                rgba(255, 215, 0, 0.05) 100%);
+            border-radius: 15px;
+            border: 2px solid rgba(255, 215, 0, 0.3);
+            box-shadow: 
+                0 4px 15px rgba(255, 215, 0, 0.2),
+                inset 0 1px 3px rgba(255, 255, 255, 0.3);
+            position: relative;
+            overflow: hidden;
+            animation: phraseGlow 2s ease-in-out infinite alternate;
+        }
+
+        .phrase-group::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, 
+                transparent, 
+                rgba(255, 215, 0, 0.1), 
+                transparent);
+            animation: phraseShimmer 3s ease-in-out infinite;
+        }
+
+        @keyframes phraseGlow {
+            0% { 
+                box-shadow: 
+                    0 4px 15px rgba(255, 215, 0, 0.2),
+                    inset 0 1px 3px rgba(255, 255, 255, 0.3);
+            }
+            100% { 
+                box-shadow: 
+                    0 6px 20px rgba(255, 215, 0, 0.4),
+                    inset 0 1px 3px rgba(255, 255, 255, 0.4),
+                    0 0 15px rgba(255, 215, 0, 0.2);
+            }
+        }
+
+        @keyframes phraseShimmer {
+            0% { left: -100%; }
+            50% { left: -100%; }
+            100% { left: 100%; }
+        }
+
+        .phrase-label {
+            text-align: center;
+            font-weight: bold;
+            font-size: 1.1em;
+            color: #B8860B;
+            margin-bottom: 8px;
+            text-shadow: 
+                0 1px 3px rgba(255, 255, 255, 0.8),
+                0 0 10px rgba(255, 215, 0, 0.3);
+            position: relative;
+            z-index: 1;
+        }
+
+        .phrase-chars {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            justify-content: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .completed-phrase-char {
+            position: relative;
+            animation: charPulse 1.5s ease-in-out infinite alternate;
+            box-shadow: 
+                0 2px 8px rgba(0, 0, 0, 0.2),
+                0 4px 12px rgba(255, 215, 0, 0.4),
+                inset 0 1px 2px rgba(255, 255, 255, 0.3),
+                0 0 15px rgba(255, 215, 0, 0.2) !important;
+            border: 3px solid rgba(255, 215, 0, 0.6) !important;
+        }
+
+        .completed-phrase-char::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg, 
+                transparent 25%, 
+                rgba(255, 215, 0, 0.3) 50%, 
+                transparent 75%);
+            border-radius: 999px;
+            z-index: -1;
+            animation: charGlow 2s linear infinite;
+        }
+
+        @keyframes charPulse {
+            0% { 
+                transform: scale(1);
+                box-shadow: 
+                    0 2px 8px rgba(0, 0, 0, 0.2),
+                    0 4px 12px rgba(255, 215, 0, 0.4),
+                    inset 0 1px 2px rgba(255, 255, 255, 0.3),
+                    0 0 15px rgba(255, 215, 0, 0.2);
+            }
+            100% { 
+                transform: scale(1.05);
+                box-shadow: 
+                    0 3px 12px rgba(0, 0, 0, 0.3),
+                    0 6px 18px rgba(255, 215, 0, 0.6),
+                    inset 0 1px 2px rgba(255, 255, 255, 0.4),
+                    0 0 20px rgba(255, 215, 0, 0.4);
+            }
+        }
+
+        @keyframes charGlow {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* 不同詞句長度的特殊效果 */
+        .phrase-group[data-phrase-length="4"] {
+            border-color: rgba(255, 215, 0, 0.8);
+            background: linear-gradient(135deg, 
+                rgba(255, 215, 0, 0.1) 0%, 
+                rgba(255, 255, 255, 0.15) 50%, 
+                rgba(255, 215, 0, 0.1) 100%);
+        }
+
+        .phrase-group[data-phrase-length="4"] .phrase-label {
+            font-size: 1.3em;
+            color: #DAA520;
+        }
+
+        .phrase-group[data-phrase-length="3"] {
+            border-color: rgba(192, 192, 192, 0.6);
+        }
+
+        .phrase-group[data-phrase-length="2"] {
+            border-color: rgba(205, 127, 50, 0.5);
+        }
+
+        #report {
+            margin: 20px 0 30px 0;
+            color: #333;
+            font-size: 1.1em;
+            line-height: 1.5;
+            padding: 15px;
+            background: #f0f8f0;
+            border-radius: 10px;
+            border-left: 4px solid #FFD700;
+        }
+
+        /* 聖誕主題按鈕樣式 */
+        #card button {
+            font-size: 1.3em;
+            padding: 15px 30px;
+            border-radius: 25px;
+            border: 2px solid rgba(255, 215, 0, 0.3);
+            background: linear-gradient(45deg, #B8860B, #DAA520, #FFD700);
+            color: #013;
+            cursor: pointer;
+            transition: all 0.4s ease;
+            box-shadow: 
+                0 4px 15px rgba(255, 215, 0, 0.3),
+                inset 0 2px 4px rgba(255, 255, 255, 0.2);
+            font-weight: bold;
+            font-family: inherit;
+            position: relative;
+            overflow: hidden;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        #card button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: left 0.6s ease;
+        }
+
+        #card button:hover::before {
+            left: 100%;
+        }
+
+        #card button:hover {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 
+                0 8px 25px rgba(255, 215, 0, 0.4),
+                inset 0 2px 4px rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 215, 0, 0.6);
+            background: linear-gradient(45deg, #DAA520, #FFD700, #FFFFE0);
+        }
+
+        #card button:active {
+            transform: translateY(-1px) scale(0.98);
+            box-shadow: 
+                0 3px 12px rgba(255, 215, 0, 0.3),
+                inset 0 3px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        #card button .button-icon {
+            margin-right: 8px;
+            display: inline-block;
+            animation: bounce 2s ease-in-out infinite;
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-3px); }
+            60% { transform: translateY(-2px); }
+        }
+
+        /* 營養圓餅圖樣式 */
+        #nutritionChart {
+            max-width: 280px;
+            max-height: 280px;
+            width: 100%;
+            margin: 20px auto;
+            background: transparent;
+        }
+
+        /* 起始視窗樣式 - 聖誕主題 */
+        #start-screen {
+            position: fixed;
+            inset: 0;
+            background: 
+                radial-gradient(ellipse at 30% 70%, rgba(25, 25, 112, 0.4) 0%, transparent 70%),
+                radial-gradient(ellipse at 70% 30%, rgba(72, 61, 139, 0.3) 0%, transparent 70%),
+                radial-gradient(ellipse at 50% 50%, rgba(255, 215, 0, 0.05) 0%, transparent 50%),
+                rgba(15, 15, 35, 0.85);
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            z-index: 1000;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 20px 0;
+            box-sizing: border-box;
+            -webkit-overflow-scrolling: touch;
+            backdrop-filter: blur(3px);
+        }
+
+        #start-card {
+            background: #fff;
+            border-radius: 20px;
+            padding: 30px 25px;
+            width: min(90%, 480px);
+            max-height: none;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            margin: auto 0;
+            flex-shrink: 0;
+            position: relative;
+        }
+
+        #start-card h1 {
+            margin: 0 0 5px 0;
+            font-size: 2.5em;
+            color: #013;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        #start-card h2 {
+            margin: 0 0 25px 0;
+            font-size: 1.2em;
+            color: #B8860B;
+            font-weight: normal;
+        }
+
+        #instructions {
+            text-align: left;
+            margin: 20px 0 30px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            border-left: 4px solid #FFD700;
+        }
+
+        #instructions h3 {
+            margin: 0 0 15px 0;
+            color: #013;
+            text-align: center;
+        }
+
+        #instructions p {
+            margin: 8px 0;
+            color: #333;
+            line-height: 1.5;
+        }
+
+        #start-button {
+            font-size: 1.4em;
+            padding: 18px 35px;
+            border-radius: 30px;
+            border: 3px solid rgba(255, 215, 0, 0.4);
+            background: linear-gradient(45deg, #B8860B, #DAA520, #FFD700);
+            color: #013;
+            cursor: pointer;
+            transition: all 0.4s ease;
+            box-shadow: 
+                0 6px 20px rgba(255, 215, 0, 0.4),
+                inset 0 3px 6px rgba(255, 255, 255, 0.2);
+            font-weight: bold;
+            position: relative;
+            overflow: hidden;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            animation: glow 3s ease-in-out infinite alternate;
+        }
+
+        @keyframes glow {
+            0% { 
+                box-shadow: 
+                    0 6px 20px rgba(255, 215, 0, 0.4),
+                    inset 0 3px 6px rgba(255, 255, 255, 0.2);
+            }
+            100% { 
+                box-shadow: 
+                    0 8px 30px rgba(255, 215, 0, 0.6),
+                    0 0 20px rgba(255, 215, 0, 0.3),
+                    inset 0 3px 6px rgba(255, 255, 255, 0.3);
+            }
+        }
+
+        #start-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+            transition: left 0.6s ease;
+        }
+
+        #start-button:hover::before {
+            left: 100%;
+        }
+
+        #start-button:hover {
+            transform: translateY(-4px) scale(1.05);
+            border-color: rgba(255, 215, 0, 0.7);
+            background: linear-gradient(45deg, #DAA520, #FFD700, #FFFFE0);
+            animation: none;
+        }
+
+        #start-button:active {
+            transform: translateY(-2px) scale(1.02);
+            box-shadow: 
+                0 4px 15px rgba(255, 215, 0, 0.3),
+                inset 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        /* 按鈕容器樣式 */
+        #start-buttons,
+        #end-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            align-items: center;
+        }
+
+        /* 次要按鈕樣式 - 聖誕銀色主題 */
+        .secondary-button {
+            font-size: 1.1em;
+            padding: 12px 25px;
+            border-radius: 25px;
+            border: 2px solid rgba(192, 192, 192, 0.6);
+            background: linear-gradient(45deg, transparent, rgba(192, 192, 192, 0.1));
+            color: #C0C0C0;
+            cursor: pointer;
+            transition: all 0.4s ease;
+            font-weight: bold;
+            font-family: inherit;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .secondary-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(192, 192, 192, 0.2), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .secondary-button:hover::before {
+            left: 100%;
+        }
+
+        .secondary-button:hover {
+            background: linear-gradient(45deg, #C0C0C0, #E5E5E5);
+            color: #013;
+            transform: translateY(-2px);
+            box-shadow: 
+                0 6px 15px rgba(192, 192, 192, 0.3),
+                inset 0 2px 4px rgba(255, 255, 255, 0.2);
+            border-color: rgba(192, 192, 192, 0.8);
+        }
+
+        .secondary-button:active {
+            transform: translateY(-1px) scale(0.98);
+            box-shadow: 
+                0 3px 10px rgba(192, 192, 192, 0.2),
+                inset 0 3px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        /* 難度選擇器樣式 */
+        #difficulty-selector {
+            margin: 20px 0 25px 0;
+            text-align: center;
+        }
+
+        #difficulty-selector h3 {
+            margin: 0 0 15px 0;
+            color: #013;
+            font-size: 1.2em;
+        }
+
+        #difficulty-buttons {
+            display: flex;
+            flex-direction: row;
+            gap: 8px;
+            margin: 15px 0;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .difficulty-btn {
+            background: #f8f9fa;
+            border: 2px solid #ddd;
+            border-radius: 12px;
+            padding: 10px 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            font-family: inherit;
+            flex: 1;
+            min-width: 90px;
+            max-width: 120px;
+        }
+
+        .difficulty-btn:hover {
+            border-color: #FFD700;
+            background: #f0f8f0;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(255, 215, 0, 0.2);
+        }
+
+        .difficulty-btn.selected {
+            border-color: #FFD700;
+            background: linear-gradient(45deg, #FFFACD, #f0f8f0);
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+        }
+
+        .difficulty-name {
+            display: block;
+            font-weight: bold;
+            font-size: 1em;
+            color: #013;
+            margin-bottom: 2px;
+        }
+
+        .difficulty-desc {
+            display: block;
+            font-size: 0.8em;
+            color: #666;
+            line-height: 1.2;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* LINE SEED 字體說明樣式 */
+        #font-notice {
+            margin: 20px 0 25px 0;
+            text-align: center;
+        }
+
+        #font-notice p {
+            margin: 0;
+            padding: 15px;
+            background: #f0f8f0;
+            border-radius: 10px;
+            border-left: 4px solid #FFD700;
+            color: #333;
+            font-size: 0.95em;
+            line-height: 1.5;
+        }
+
+        #font-notice a {
+            color: #B8860B;
+            text-decoration: none;
+            font-weight: bold;
+            border-bottom: 1px dotted #B8860B;
+            transition: all 0.3s ease;
+        }
+
+        #font-notice a:hover {
+            color: #DAA520;
+            border-bottom-color: #DAA520;
+            text-shadow: 0 0 2px rgba(255, 215, 0, 0.3);
+        }
+
+        /* 說明頁樣式 - 聖誕主題 */
+        #help-screen {
+            position: fixed;
+            inset: 0;
+            background: 
+                radial-gradient(ellipse at 30% 70%, rgba(25, 25, 112, 0.4) 0%, transparent 70%),
+                radial-gradient(ellipse at 70% 30%, rgba(72, 61, 139, 0.3) 0%, transparent 70%),
+                radial-gradient(ellipse at 50% 50%, rgba(255, 215, 0, 0.05) 0%, transparent 50%),
+                rgba(15, 15, 35, 0.85);
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            z-index: 1000;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 20px;
+            box-sizing: border-box;
+            -webkit-overflow-scrolling: touch;
+            backdrop-filter: blur(3px);
+        }
+
+        #help-card {
+            background: #fff;
+            border-radius: 20px;
+            padding: 30px 25px;
+            width: min(95%, 600px);
+            max-height: 90vh;
+            overflow-y: auto;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        #help-card h1 {
+            margin: 0 0 5px 0;
+            font-size: 2.2em;
+            color: #013;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        #help-card h2 {
+            margin: 0 0 25px 0;
+            font-size: 1.1em;
+            color: #B8860B;
+            font-weight: normal;
+        }
+
+        #food-categories {
+            text-align: left;
+            margin: 20px 0 25px 0;
+        }
+
+        .food-category {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            border-left: 4px solid #FFD700;
+        }
+
+        .food-category h4 {
+            margin: 0 0 10px 0;
+            color: #013;
+            font-size: 1.1em;
+        }
+
+        .food-items {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .food-item {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: bold;
+            min-width: 60px;
+        }
+
+        .food-item .char {
+            font-size: 16px;
+            margin-right: 4px;
+        }
+
+        .category-desc {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 8px;
+            font-style: italic;
+        }
+
+        #help-instructions {
+            margin: 25px 0;
+            text-align: left;
+            padding: 15px;
+            background: #f0f8f0;
+            border-radius: 10px;
+            border-left: 4px solid #FFD700;
+        }
+
+        #help-instructions h3 {
+            margin: 0 0 10px 0;
+            color: #013;
+            text-align: center;
+        }
+
+        #help-instructions p {
+            margin: 6px 0;
+            color: #333;
+            line-height: 1.4;
+            font-size: 0.95em;
+        }
+
+        #help-back-button {
+            font-size: 1.2em;
+            padding: 12px 25px;
+            border-radius: 25px;
+            border: none;
+            background: linear-gradient(45deg, #B8860B, #DAA520);
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);
+            font-weight: bold;
+            margin-top: 15px;
+        }
+
+        #help-back-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 215, 0, 0.4);
+            background: linear-gradient(45deg, #DAA520, #FFD700);
+        }
+
+        #help-back-button:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 10px rgba(255, 215, 0, 0.3);
+        }
+
+        /* 響應式設計 */
+        /* Canvas 響應式優化 - 針對不同iPhone機型 */
+        
+        /* iPhone SE (320x568) - 最小螢幕 */
+        @media (max-width: 320px) {
+            canvas:not(#nutritionChart) {
+                margin: 60px auto 170px auto;  /* 為聖誕燈預留充足空間 */
+                max-width: calc(100vw - 100px);  /* 為聖誕燈預留更多空間 */
+                padding: 30px;
+            }
+            
+            #pad {
+                width: 150px;
+                height: 150px;
+                bottom: 8px;
+            }
+            
+            #hud {
+                padding: 3px 0;
+                gap: 6px;
+                font-size: 14px;
+            }
+            
+            /* 超小螢幕難度按鈕 */
+            #difficulty-buttons {
+                gap: 4px;
+                margin: 10px 0;
+            }
+            
+            .difficulty-btn {
+                padding: 8px 6px;
+                min-width: 70px;
+                max-width: 85px;
+            }
+            
+            .difficulty-name {
+                font-size: 0.9em;
+            }
+            
+            .difficulty-desc {
+                font-size: 0.7em;
+                display: none; /* 超小螢幕隱藏描述 */
+            }
+        }
+        
+        /* iPhone 12 mini, iPhone 13 mini (375x812) */
+        @media (max-width: 375px) and (min-width: 321px) {
+            canvas:not(#nutritionChart) {
+                margin: 65px auto 180px auto;  /* 為聖誕燈預留充足空間 */
+                max-width: calc(100vw - 90px);  /* 為聖誕燈預留更多空間 */
+                padding: 35px;
+            }
+            
+            #pad {
+                width: 160px;
+                height: 160px;
+                bottom: 8px;
+            }
+            
+            #hud {
+                padding: 4px 0;
+                gap: 8px;
+                font-size: 15px;
+            }
+            
+            /* 小螢幕難度按鈕 */
+            #difficulty-buttons {
+                gap: 6px;
+                margin: 12px 0;
+            }
+            
+            .difficulty-btn {
+                padding: 9px 8px;
+                min-width: 85px;
+                max-width: 100px;
+            }
+            
+            .difficulty-desc {
+                font-size: 0.75em;
+            }
+        }
+        
+        /* iPhone 12, iPhone 13, iPhone 14 (390x844) */
+        @media (max-width: 390px) and (min-width: 376px) {
+            canvas:not(#nutritionChart) {
+                margin: 70px auto 185px auto;  /* 為聖誕燈預留充足空間 */
+                max-width: calc(100vw - 80px);  /* 為聖誕燈預留空間 */
+                padding: 35px;
+            }
+            
+            #pad {
+                width: 165px;
+                height: 165px;
+                bottom: 10px;
+            }
+        }
+        
+        /* iPhone 14 Plus, iPhone 12 Pro Max (428x926) */
+        @media (max-width: 428px) and (min-width: 391px) {
+            canvas:not(#nutritionChart) {
+                margin: 75px auto 190px auto;  /* 為聖誕燈預留充足空間 */
+                max-width: calc(100vw - 70px);
+                padding: 35px;
+            }
+            
+            #pad {
+                width: 170px;
+                height: 170px;
+                bottom: 12px;
+            }
+        }
+        
+        /* 其他手機設備 */
+        @media (max-width: 480px) and (min-width: 429px) {
+            canvas:not(#nutritionChart) {
+                margin: 80px auto 195px auto;  /* 為聖誕燈預留充足空間 */
+                max-width: calc(100vw - 60px);
+                padding: 40px;
+            }
+            
+            #pad {
+                width: 175px;
+                height: 175px;
+                bottom: 12px;
+            }
+        }
+        
+        /* 額外小螢幕優化 */
+        @media (max-height: 600px) {
+            #start-screen {
+                padding: 5px 0;
+            }
+            
+            #start-card {
+                margin: 5px auto;
+                padding: 15px 10px;
+            }
+            
+            #start-card h1 {
+                font-size: 2em;
+                margin: 0 0 3px 0;
+            }
+            
+            #start-card h2 {
+                font-size: 1em;
+                margin: 0 0 15px 0;
+            }
+            
+            #instructions {
+                margin: 10px 0 15px 0;
+                padding: 10px;
+            }
+            
+            #difficulty-selector {
+                margin: 10px 0 15px 0;
+            }
+            
+            #font-notice {
+                margin: 10px 0 15px 0;
+            }
+            
+            #font-notice p {
+                padding: 8px;
+                font-size: 0.85em;
+            }
+        }
+        
+        /* 性能優化模式 - 自動偵測低性能設備 */
+        .performance-optimized body::before {
+            animation-duration: 10s;
+            background-size: 300px 180px;
+            background-image: 
+                radial-gradient(2px 2px at 50px 50px, rgba(255, 255, 255, 0.7), transparent),
+                radial-gradient(1px 1px at 100px 80px, rgba(255, 255, 255, 0.5), transparent),
+                radial-gradient(1px 1px at 150px 30px, rgba(255, 215, 0, 0.3), transparent);
+        }
+        
+        .performance-optimized body::after {
+            animation-duration: 25s;
+            font-size: 14px;
+            letter-spacing: 25px;
+        }
+        
+        .performance-optimized #start-button {
+            animation: none !important;
+        }
+        
+        .performance-optimized #pad button::before,
+        .performance-optimized #start-button::before,
+        .performance-optimized .secondary-button::before {
+            display: none;
+        }
+        
+        /* 移動設備性能優化 - 減少動畫複雜度 */
+        @media (max-width: 480px) {
+            /* 簡化背景特效 */
+            body::before {
+                background-size: 280px 140px;
+                animation-duration: 8s;
+                background-image: 
+                    radial-gradient(2px 2px at 40px 50px, rgba(255, 255, 255, 0.8), transparent),
+                    radial-gradient(1px 1px at 120px 70px, rgba(255, 255, 255, 0.6), transparent),
+                    radial-gradient(1px 1px at 80px 30px, rgba(255, 255, 255, 0.5), transparent),
+                    radial-gradient(1px 1px at 160px 90px, rgba(255, 215, 0, 0.4), transparent);
+            }
+            
+            body::after {
+                font-size: 16px;
+                letter-spacing: 20px;
+                animation-duration: 22s;
+            }
+            
+            /* 簡化按鈕動畫 */
+            #pad button::before,
+            #start-button::before,
+            .secondary-button::before {
+                display: none;
+            }
+            
+            /* 減少陰影複雜度 */
+            #pad button:hover,
+            #start-button:hover,
+            .secondary-button:hover {
+                box-shadow: 0 2px 8px rgba(255, 215, 0, 0.3);
+            }
+        }
+
+        /* 支持減少動作的設備 - 無障礙設計 */
+        @media (prefers-reduced-motion: reduce) {
+            body::before,
+            body::after,
+            #start-button {
+                animation: none !important;
+            }
+            
+            body::before {
+                opacity: 0.3;
+            }
+            
+            body::after {
+                display: none;
+            }
+            
+            * {
+                transition-duration: 0.15s !important;
+                animation: none !important;
+            }
+        }
+
+        @media (max-width: 480px) {
+            #hud {
+                font-size: 16px;
+                gap: 8px;
+                padding: 6px 0;
+            }
+
+            #pad button {
+                font-size: 22px;
+            }
+
+            /* Canvas設定在上面的特定media query中處理 */
+            
+            /* 手機版難度按鈕優化 */
+            #difficulty-selector {
+                margin: 15px 0 20px 0;
+            }
+            
+            .difficulty-btn {
+                font-size: 0.95em;
+            }
+
+            #list {
+                font-size: 20px;
+                gap: 10px;
+            }
+
+            .chip {
+                padding: 6px 10px;
+                font-size: 16px;
+            }
+
+            /* 手機版結束視窗 */
+            #card {
+                padding: 25px 20px;
+                width: min(95%, 400px);
+            }
+
+            #card h2 {
+                font-size: 1.8em;
+                margin: 0 0 15px 0;
+            }
+
+            #list {
+                padding: 15px;
+                margin: 15px 0 20px 0;
+                font-size: 16px;
+                gap: 8px;
+            }
+
+            .chip {
+                padding: 5px 10px;
+                font-size: 14px;
+            }
+
+            #report {
+                margin: 15px 0 25px 0;
+                padding: 12px;
+                font-size: 1em;
+            }
+
+            #card button {
+                font-size: 1.2em;
+                padding: 12px 25px;
+            }
+            
+            /* 手機版圓餅圖優化 */
+            #nutritionChart {
+                max-width: 240px;
+                max-height: 240px;
+                margin: 15px auto;
+            }
+
+            /* 手機版起始視窗 */
+            #start-screen {
+                padding: 10px 0;
+            }
+            
+            #start-card {
+                padding: 20px 15px;
+                width: min(95%, 350px);
+                margin: 10px auto;
+            }
+
+            #start-card h1 {
+                font-size: 2.2em;
+            }
+
+            #start-card h2 {
+                font-size: 1.1em;
+            }
+
+            #instructions {
+                padding: 15px;
+                margin: 15px 0 25px 0;
+            }
+
+            #instructions h3 {
+                font-size: 1.1em;
+            }
+
+            #instructions p {
+                font-size: 0.95em;
+            }
+
+            #start-button {
+                font-size: 1.2em;
+                padding: 12px 25px;
+            }
+
+            /* 手機版字體說明 */
+            #font-notice {
+                margin: 15px 0 20px 0;
+            }
+
+            #font-notice p {
+                padding: 12px;
+                font-size: 0.9em;
+            }
+
+            /* 手機版說明頁 */
+            #help-screen {
+                padding: 10px;
+            }
+
+            #help-card {
+                padding: 20px 15px;
+                width: min(98%, 400px);
+            }
+
+            #help-card h1 {
+                font-size: 1.8em;
+            }
+
+            #help-card h2 {
+                font-size: 1em;
+            }
+
+            .food-category {
+                padding: 12px;
+                margin-bottom: 15px;
+            }
+
+            .food-category h4 {
+                font-size: 1em;
+            }
+
+            .food-item {
+                font-size: 12px;
+                padding: 3px 6px;
+                min-width: 50px;
+            }
+
+            .food-item .char {
+                font-size: 14px;
+            }
+
+            #help-instructions {
+                padding: 12px;
+            }
+
+            #help-back-button {
+                font-size: 1.1em;
+                padding: 10px 20px;
+            }
+
+            /* 手機版按鈕容器 */
+            #start-buttons,
+            #end-buttons {
+                gap: 10px;
+            }
+
+            .secondary-button {
+                font-size: 1em;
+                padding: 10px 20px;
+            }
+        }
+
+        @media (min-width: 481px) and (max-width: 768px) {
+            #hud {
+                font-size: 15px;
+            }
+
+            #pad {
+                width: 190px;
+                height: 190px;
+            }
+
+            #pad button {
+                font-size: 22px;
+            }
+
+            #list {
+                font-size: 19px;
+            }
+
+            .chip {
+                padding: 5px 9px;
+            }
+        }
+
+        @media (min-width: 769px) {
+            #hud {
+                font-size: 14px;
+            }
+
+            canvas:not(#nutritionChart) {
+                margin: 80px auto 130px auto;  /* 桌面版為聖誕燈預留充足空間 */
+            }
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/p5@1.9.0/lib/p5.min.js"></script>
+    <script src="./items.js"></script>
+    <script src="./ending.js"></script>
+    <script>
+        // 聖誕版裝置檢測 - 不覆蓋背景樣式
+        function detectChristmasDevice() {
+            const userAgent = navigator.userAgent.toLowerCase();
+            let deviceType = 'Desktop';
+            
+            if (/iphone|ipad|ipod/.test(userAgent)) {
+                deviceType = 'iOS';
+            } else if (/android/.test(userAgent)) {
+                deviceType = 'Android';
+            }
+            
+            console.log(`🎄 聖誕版裝置檢測: ${deviceType}`);
+            return { deviceType };
+        }
+        
+        // 初始化聖誕主題
+        function initChristmasTheme() {
+            const deviceInfo = detectChristmasDevice();
+            console.log('🎄 聖誕主題已啟動，背景由 CSS 控制');
+            
+            // 為不同設備調整體驗
+            if (deviceInfo.deviceType === 'iOS' || deviceInfo.deviceType === 'Android') {
+                document.body.classList.add('mobile-device');
+            }
+            
+            // 性能優化：檢測並調整動畫複雜度
+            optimizePerformance();
+        }
+        
+        // 性能優化函數
+        function optimizePerformance() {
+            const isMobile = window.innerWidth <= 480;
+            const isLowPerformance = navigator.hardwareConcurrency <= 2 || 
+                                   navigator.deviceMemory <= 2 || 
+                                   /Android.*[2-6]\./i.test(navigator.userAgent);
+            
+            if (isMobile || isLowPerformance) {
+                // 添加性能優化類
+                document.body.classList.add('performance-optimized');
+                console.log('🔧 啟用性能優化模式');
+                
+                // 減少特效持續時間
+                window.reducedAnimations = true;
+            }
+        }
+        
+        // DOM 載入完成後初始化
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initChristmasTheme);
+        } else {
+            initChristmasTheme();
+        }
+    </script>
+</head>
+
+<body>
+    <div id="hud"><span id="time">60</span>s｜長度 <span id="len">1</span>｜字體: <span id="font-info">檢測中...</span></div>
+    <div id="pad">
+        <button id="L">←</button><button id="U">↑</button>
+        <button id="D">↓</button><button id="R">→</button>
+    </div>
+    <div id="start-screen">
+        <div id="start-card">
+            <h1>文字貪食蛇</h1>
+            <h2>聖誕祝福版</h2>
+            <div id="instructions">
+                <h3>🎮 操作方式</h3>
+                <p>• 使用方向鍵 ↑↓←→ 或點擊下方按鈕控制移動</p>
+                <p>• 收集聖誕與信仰字符讓蛇變長</p>
+                <p>• 組成詞句可獲得特殊祝福效果</p>
+                <p>• 不同字符會影響移動速度和屬靈成長</p>
+                <p>• 避免撞牆或撞到自己</p>
+                <p>• 在 60 秒內收集更多祝福，體驗聖誕喜悅！</p>
+            </div>
+            <div id="difficulty-selector">
+                <h3>⚡ 選擇難度</h3>
+                <div id="difficulty-buttons">
+                    <button class="difficulty-btn" data-difficulty="easy">
+                        <span class="difficulty-name">🕊️ 平安夜</span>
+                        <span class="difficulty-desc">緩慢享受聖誕寧靜</span>
+                    </button>
+                    <button class="difficulty-btn" data-difficulty="normal">
+                        <span class="difficulty-name">⭐ 聖誕晨</span>
+                        <span class="difficulty-desc">正常的慶祝節奏</span>
+                    </button>
+                    <button class="difficulty-btn" data-difficulty="hard">
+                        <span class="difficulty-name">📯 報佳音</span>
+                        <span class="difficulty-desc">積極傳揚喜訊的速度</span>
+                    </button>
+                </div>
+            </div>
+            <div id="font-notice" style="display: none;">
+                <p>✨ 如果您的裝置已安裝 <a href="https://seed.line.me/index_tw.html" target="_blank" rel="noopener">LINE SEED 字體</a>，聖誕祝福字符將呈現更美麗的效果。</p>
+            </div>
+            <div id="start-buttons">
+                <button id="start-button"><span class="button-icon">🎄</span>開始聖誕祝福之旅</button>
+                <button id="help-button" class="secondary-button">📖 字符祝福說明</button>
+            </div>
+        </div>
+    </div>
+    <div id="countdown-screen"
+        style="display:none; position:fixed; inset:0; background:radial-gradient(ellipse at 50% 50%, rgba(25, 25, 112, 0.5) 0%, transparent 70%), rgba(15, 15, 35, 0.9); z-index:1001; align-items:center; justify-content:center; backdrop-filter:blur(5px);">
+        <div style="color:#FFD700; font-size:4em; font-weight:bold; text-shadow:0 0 20px rgba(255, 215, 0, 0.5), 0 0 40px rgba(255, 215, 0, 0.3);" id="countdown-number">3</div>
+    </div>
+    
+    <!-- 說明頁 -->
+    <div id="help-screen" style="display:none;">
+        <div id="help-card">
+            <h1>🎄 聖誕祝福字符說明</h1>
+            <h2>遊戲中所有字符的屬靈意義與效果</h2>
+            
+            <div id="food-categories">
+                <!-- 食物分類內容將由 JavaScript 動態生成 -->
+            </div>
+            
+            <div id="help-instructions">
+                <h3>🎮 遊戲提示</h3>
+                <p>• 不同字符會影響蛇的移動速度和屬靈成長</p>
+                <p>• 讚美字符「哈利路亞」會先加速後穩定</p>
+                <p>• 收集字符組成完整詞句可獲得特殊祝福效果</p>
+                <p>• 例如：「聖誕快樂」、「耶穌愛我」、「哈利路亞」等</p>
+                <p>• 字符會定期隨機變換位置和類型</p>
+            </div>
+            
+            <button id="help-back-button">← 返回</button>
+        </div>
+    </div>
+    <div id="over">
+        <div id="card">
+            <h2>聖誕祝福收穫</h2>
+            <div id="list"></div>
+            <p id="report"></p>
+            <canvas id="nutritionChart" width="400" height="400"></canvas>
+            <div id="end-buttons">
+                <button onclick="location.reload()"><span class="button-icon">🔄</span>再次體驗祝福</button>
+                <button id="help-from-end-button" class="secondary-button">📖 字符祝福說明</button>
+            </div>
+        </div>
+    </div>
+    <script src="./game.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</body>
+
+</html>

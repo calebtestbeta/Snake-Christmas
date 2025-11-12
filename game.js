@@ -1,0 +1,2429 @@
+// 文字貪食蛇 - 聖誕祝福版 v1.0
+const GAME_CONFIG = {
+    // 固定網格設定
+    GRID_COLS: 18,
+    GRID_ROWS: 25,
+
+    // 遊戲核心參數
+    DEFAULT_SPEED: 8,
+    GAME_DURATION: 60,
+    FOOD_CHANGE_INTERVAL: 5000,
+    FRAME_RATE: 16,
+
+    // 聖誕字符系統配置
+    INITIAL_FOOD_COUNT: 6,
+    MAX_SPAWN_ATTEMPTS: 100,
+    CORE_CHRISTMAS_PROBABILITY: 0.3,
+
+    // 響應式設計
+    RESPONSIVE_TEXT_RATIO: 0.7,
+    MOBILE_BREAKPOINT: 480,
+    TABLET_BREAKPOINT: 768,
+
+    // 聖誕夜空背景顏色配置 - 透明度設定以不干擾 CSS 漸層背景
+    CANVAS_BACKGROUND_ALPHA: 0,                  // 透明背景讓CSS控制
+    DEFAULT_BACKGROUND_COLOR: 'transparent',      // 使用透明背景
+    BORDER_COLOR: [1, 51, 51],                   // 深藍邊框色 #013333
+
+    // Canvas 邊距
+    CANVAS_PADDING: 40
+};
+
+// 遊戲狀態變數
+let cell, cols = GAME_CONFIG.GRID_COLS, rows = GAME_CONFIG.GRID_ROWS;
+let snake, dir = 'RIGHT', foods = [], speed = 8, t = 0, timer = 60;
+let stat = { faith: 0, love: 0, hope: 0, peace: 0, joy: 0, praise: 0, wisdom: 0, trust: 0 }, ate = [];
+let completedPhrases = []; // 存儲完成的詞句
+let phraseHintShown = false; // 是否已顯示詞句提示
+let effectUntil = 0, postEffect = null;
+let collectedChars = [];
+let collectedCharTypes = [];
+let foodChangeTimer = 0;
+let gameFont = 'sans-serif';
+let responsiveTextRatio = GAME_CONFIG.RESPONSIVE_TEXT_RATIO;
+let gameState = 'START';
+let isPaused = false;
+let gameBackgroundTransparent = true; // 使用透明背景讓CSS控制
+let previousScreen = 'START';
+let difficulty = 'easy';
+
+// 伯利恆之星系統
+let bethlehemStar = {
+    x: 0, y: 0,                    // 當前位置
+    targetX: 0, targetY: 0,        // 目標位置
+    brightness: 1.0,               // 亮度 (0-1)
+    haloSize: 0,                   // 光暈大小
+    moveSpeed: 0.002,              // 基礎移動速度
+    currentMoveSpeed: 0.002,       // 當前移動速度（可變）
+    breatheSpeed: 0.01,            // 呼吸頻率
+    phase: 0,                      // 動畫相位
+    lastTargetChange: 0,           // 上次改變目標的時間
+    enabled: true,                 // 是否啟用星星
+    specialEffect: false,          // 特殊效果狀態
+    specialEffectEnd: 0            // 特殊效果結束時間
+};
+const DIFFICULTY_SETTINGS = {
+    easy: {
+        name: '平安夜',
+        speedMultiplier: 0.7,
+        description: '緩慢享受聖誕寧靜',
+        color: '#4CAF50'
+    },
+    normal: {
+        name: '聖誕晨',
+        speedMultiplier: 1.0,
+        description: '正常的慶祝節奏',
+        color: '#FF9800'
+    },
+    hard: {
+        name: '報佳音',
+        speedMultiplier: 1.4,
+        description: '積極傳揚喜訊的速度',
+        color: '#F44336'
+    }
+};
+
+// 實用工具函數
+const Utils = {
+    // 安全的數學運算
+    clamp(value, min, max) {
+        return Math.max(min, Math.min(max, value));
+    },
+
+    // 隨機整數
+    randomInt(min, max) {
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+    },
+
+    // 檢查位置是否在邊界內
+    isValidPosition(x, y, cols, rows) {
+        return x >= 0 && x < cols && y >= 0 && y < rows;
+    },
+
+    // 檢查兩個位置是否相同
+    isSamePosition(pos1, pos2) {
+        return pos1.x === pos2.x && pos1.y === pos2.y;
+    },
+
+    // 將十六進制顏色轉換為 RGB 陣列
+    hexToRgb(hex) {
+        const r = parseInt(hex.slice(1, 3), 16);
+        const g = parseInt(hex.slice(3, 5), 16);
+        const b = parseInt(hex.slice(5, 7), 16);
+        return [r, g, b];
+    }
+};
+
+// DOM 元素管理器
+const DOMManager = {
+    elements: {},
+
+    // 初始化時快取所有常用元素
+    init() {
+        this.elements = {
+            // HUD 元素
+            time: select('#time'),
+            len: select('#len'),
+            fontInfo: select('#font-info'),
+
+            // 畫面元素
+            startScreen: select('#start-screen'),
+            countdownScreen: select('#countdown-screen'),
+            countdownNumber: select('#countdown-number'),
+            helpScreen: select('#help-screen'),
+            overScreen: select('#over'),
+
+            // 按鈕元素
+            startButton: select('#start-button'),
+            helpButton: select('#help-button'),
+            helpFromEndButton: select('#help-from-end-button'),
+            helpBackButton: select('#help-back-button'),
+
+            // 內容容器
+            foodCategories: select('#food-categories'),
+            list: select('#list'),
+            report: select('#report'),
+            nutritionChart: select('#nutritionChart')
+        };
+
+        // 移除不存在的元素
+        Object.keys(this.elements).forEach(key => {
+            if (!this.elements[key]) {
+                console.warn(`DOM元素不存在: #${key}`);
+                delete this.elements[key];
+            }
+        });
+    },
+
+    // 安全獲取元素
+    get(elementKey) {
+        return this.elements[elementKey] || null;
+    },
+
+    // 設定元素內容
+    setContent(elementKey, content) {
+        const element = this.get(elementKey);
+        if (element) {
+            element.html(content);
+        }
+    },
+
+    // 設定元素樣式
+    setStyle(elementKey, property, value) {
+        const element = this.get(elementKey);
+        if (element) {
+            element.style(property, value);
+        }
+    },
+
+    // 顯示/隱藏元素
+    show(elementKey) {
+        this.setStyle(elementKey, 'display', 'flex');
+    },
+
+    hide(elementKey) {
+        this.setStyle(elementKey, 'display', 'none');
+    }
+};
+
+// 聖誕祝福主題色彩系統 - 優化對比度版本
+const FOOD_COLORS = {
+    // 📿 信仰核心：金色系（優化對比度）
+    faith: {
+        background: '#FFE55C',  // 更深的金黃色背景
+        border: '#B8860B',      // 深金色邊框
+        text: '#4A4A00'         // 深棕色文字（高對比度）
+    },
+    // ⭐ 聖誕慶典：亮黃系（優化對比度）
+    christmas: {
+        background: '#FFF570',  // 鮮明黃色背景
+        border: '#FF8C00',      // 橙色邊框
+        text: '#8B4500'         // 深棕橙色文字
+    },
+    // 🎁 祝福話語：紅色系（優化對比度）
+    blessing: {
+        background: '#FFB3BA',  // 柔和粉紅背景
+        border: '#DC143C',      // 深紅色邊框
+        text: '#8B0000'         // 深紅色文字（保持）
+    },
+    // 🕊️ 讚美敬拜：白銀系（優化對比度）
+    praise: {
+        background: '#E8E8E8',  // 淺灰背景
+        border: '#708090',      // 石板灰邊框
+        text: '#2F2F2F'         // 深灰色文字（提高對比度）
+    },
+    // ❤️ 愛的分享：粉紅系（優化對比度）
+    sharing: {
+        background: '#FFCCCB',  // 淺珊瑚粉背景
+        border: '#FF1493',      // 深粉紅邊框
+        text: '#8B008B'         // 深洋紅文字（保持）
+    },
+    // 預設（其他類型）- 優化對比度
+    default: {
+        background: '#DCDCDC',  // 淺灰色背景
+        border: '#708090',      // 石板灰邊框
+        text: '#2F2F2F'         // 深灰色文字
+    }
+};
+
+// 根據字符判斷聖誕祝福類型
+function getFoodType(char) {
+    // 直接從 ITEMS.effects 中獲取 kind 屬性
+    const effect = ITEMS.effects[char];
+    if (!effect || !effect.kind) return 'default';
+
+    return effect.kind; // 返回 faith, christmas, blessing, praise, sharing 等
+}
+
+// 取得食物顏色
+function getFoodColor(char) {
+    const type = getFoodType(char);
+    const color = FOOD_COLORS[type] || FOOD_COLORS.default;
+
+    // 確保顏色物件完整
+    if (!color || !color.background || !color.border || !color.text) {
+        console.warn(`食物顏色不完整: char=${char}, type=${type}`, color);
+        return FOOD_COLORS.default;
+    }
+
+    return color;
+}
+
+// 聖誕祝福字符選擇函數 - 增加核心信仰字符出現概率
+function getWeightedFood() {
+    // 定義核心信仰字符（更高出現機率）
+    const coreChristmasChars = ['聖', '誕', '快', '樂', '主', '神', '愛', '信'];
+
+    // 使用配置中的核心字符出現機率
+    if (random() < GAME_CONFIG.CORE_CHRISTMAS_PROBABILITY) {
+        return random(coreChristmasChars);
+    } else {
+        // 從所有聖誕字符池中選擇
+        return random(ITEMS.pool);
+    }
+}
+
+// 初始化系統
+function initializeDependencies() {
+    if (!window.ITEMS) {
+        console.error('ITEMS 物件未載入，請檢查 items.js');
+        return false;
+    }
+    if (!window.Ending) {
+        console.error('Ending 物件未載入，請檢查 ending.js');
+        return false;
+    }
+    return true;
+}
+
+function initializeCanvas() {
+    const canvasSize = calculateOptimalCanvasSize();
+    createCanvas(canvasSize.width, canvasSize.height);
+    frameRate(GAME_CONFIG.FRAME_RATE);
+
+    // 使用透明背景讓 CSS 聖誕夜空漸層顯示
+    clear();
+
+    cell = canvasSize.cellSize;
+    cols = GAME_CONFIG.GRID_COLS;
+    rows = GAME_CONFIG.GRID_ROWS;
+
+    console.log(`Canvas初始化: ${canvasSize.width}x${canvasSize.height}, Cell大小: ${cell}, 網格: ${GAME_CONFIG.GRID_COLS}x${GAME_CONFIG.GRID_ROWS}`);
+}
+
+function calculateOptimalCanvasSize() {
+    // 檢測設備類型
+    const isMobile = windowWidth <= GAME_CONFIG.MOBILE_BREAKPOINT;
+    const isTablet = windowWidth > GAME_CONFIG.MOBILE_BREAKPOINT && windowWidth <= GAME_CONFIG.TABLET_BREAKPOINT;
+    const isDesktop = windowWidth > GAME_CONFIG.TABLET_BREAKPOINT;
+
+    // 根據設備類型設定邊距和可用空間
+    let horizontalPadding, verticalReduction, maxCellSize, minCellSize;
+
+    if (isMobile) {
+        // 手機：極小邊距，最大化利用螢幕空間
+        horizontalPadding = windowWidth <= 375 ? 8 : 12; // iPhone SE使用8px，其他手機12px
+        verticalReduction = windowHeight <= 667 ? 240 : 260; // 大幅減少垂直空間占用
+        maxCellSize = 30;  // 進一步增加手機最大cell大小
+        minCellSize = 14;  // 提高最小cell大小確保可讀性
+    } else if (isTablet) {
+        // 平板：適中邊距
+        horizontalPadding = 20;
+        verticalReduction = 180;
+        maxCellSize = 32;
+        minCellSize = 16;
+    } else {
+        // 桌面：標準邊距
+        horizontalPadding = GAME_CONFIG.CANVAS_PADDING;
+        verticalReduction = 160;
+        maxCellSize = 28;
+        minCellSize = 18;
+    }
+
+    const availableWidth = windowWidth - (horizontalPadding * 2);
+    const availableHeight = windowHeight - verticalReduction;
+
+    const cellSizeByWidth = Math.floor(availableWidth / GAME_CONFIG.GRID_COLS);
+    const cellSizeByHeight = Math.floor(availableHeight / GAME_CONFIG.GRID_ROWS);
+
+    // 智能選擇cell大小：優先考慮充分利用螢幕寬度
+    let optimalCellSize;
+    if (isMobile) {
+        // 手機：優先使用寬度計算，確保充分利用螢幕寬度
+        optimalCellSize = Math.min(cellSizeByWidth, cellSizeByHeight);
+        // 如果寬度能提供更大的cell但仍在合理範圍內，優先考慮寬度
+        if (cellSizeByWidth <= maxCellSize && cellSizeByWidth > optimalCellSize) {
+            optimalCellSize = cellSizeByWidth;
+        }
+    } else {
+        // 平板和桌面：平衡寬高比
+        optimalCellSize = Math.min(cellSizeByWidth, cellSizeByHeight);
+    }
+
+    // 確保cell大小在合理範圍內
+    optimalCellSize = Math.max(minCellSize, Math.min(maxCellSize, optimalCellSize));
+
+    const canvasWidth = optimalCellSize * GAME_CONFIG.GRID_COLS;
+    const canvasHeight = optimalCellSize * GAME_CONFIG.GRID_ROWS;
+
+    const deviceType = isMobile ? 'Mobile' : isTablet ? 'Tablet' : 'Desktop';
+    const screenUtilization = ((canvasWidth / windowWidth) * 100).toFixed(1);
+
+    console.log(`Canvas計算 - 設備：${deviceType}`);
+    console.log(`  視窗：${windowWidth}x${windowHeight}px`);
+    console.log(`  邊距：H${horizontalPadding}px, V-${verticalReduction}px`);
+    console.log(`  可用空間：${availableWidth}x${availableHeight}px`);
+    console.log(`  Cell計算：寬度${cellSizeByWidth}px, 高度${cellSizeByHeight}px, 選用${optimalCellSize}px`);
+    console.log(`  最終Canvas：${canvasWidth}x${canvasHeight}px`);
+    console.log(`  螢幕寬度利用率：${screenUtilization}%`);
+
+    // 提供設備特定的優化建議和警告
+    if (isMobile) {
+        if (optimalCellSize < 16) {
+            console.warn('⚠️  手機cell大小偏小，可能影響操作體驗');
+        } else if (optimalCellSize >= 25) {
+            console.info('✅ 手機cell大小良好，遊戲體驗佳');
+        }
+
+        if (screenUtilization < 80) {
+            console.warn(`⚠️  螢幕寬度利用率偏低(${screenUtilization}%)，建議檢查邊距設置`);
+        } else {
+            console.info(`✅ 螢幕利用率良好(${screenUtilization}%)`);
+        }
+    }
+
+    return {
+        width: canvasWidth,
+        height: canvasHeight,
+        cellSize: optimalCellSize
+    };
+}
+
+function initializeGameSettings() {
+    gameFont = detectAndSetFont();
+
+    // 使用透明背景讓 CSS 聖誕夜空漸層顯示
+    clear();
+
+    console.log('使用字體：', gameFont);
+    console.log('聖誕夜空背景：由 CSS 控制');
+
+    DOMManager.setContent('fontInfo', gameFont);
+}
+
+function setupControls() {
+    setupVirtualButtons();
+    setupKeyboardControls();
+    setupGameButtons();
+    setupDifficultySelector();
+}
+
+function setupVirtualButtons() {
+    const buttonMappings = [
+        { id: '#L', direction: 'LEFT' },
+        { id: '#R', direction: 'RIGHT' },
+        { id: '#U', direction: 'UP' },
+        { id: '#D', direction: 'DOWN' }
+    ];
+
+    buttonMappings.forEach(({ id, direction }) => {
+        const button = select(id);
+        if (button) {
+            button.mousePressed(() => changeDirection(direction));
+        } else {
+            console.warn(`找不到按鈕元素: ${id}`);
+        }
+    });
+}
+
+function setupKeyboardControls() {
+    window.addEventListener('keydown', handleKeyPress);
+}
+
+function handleKeyPress(event) {
+    // 暫停功能
+    if (event.key === 'p' || event.key === 'P') {
+        if (gameState === 'PLAYING') {
+            event.preventDefault();
+            togglePause();
+        }
+        return;
+    }
+
+    // 方向鍵控制
+    if (gameState === 'PLAYING' && !isPaused) {
+        const keyDirectionMap = {
+            'ArrowLeft': 'LEFT',
+            'ArrowRight': 'RIGHT',
+            'ArrowUp': 'UP',
+            'ArrowDown': 'DOWN'
+        };
+
+        if (keyDirectionMap[event.key]) {
+            event.preventDefault();
+            changeDirection(keyDirectionMap[event.key]);
+        }
+    }
+}
+
+function setupGameButtons() {
+    const startButton = DOMManager.get('startButton');
+    if (startButton) {
+        startButton.mousePressed(startGame);
+    }
+
+    setupHelpButtons();
+}
+
+function setup() {
+    try {
+        if (!initializeDependencies()) return;
+
+        console.log('Setup開始 - 聖誕夜空背景由 CSS 控制');
+
+        DOMManager.init();
+        initializeCanvas();
+        initializeGameSettings();
+        resetGame();
+        setupControls();
+        initializeBethlehemStar();
+
+        // 使用透明背景讓 CSS 聖誕夜空顯示，繪製聖誕燈邊框
+        clear();
+        drawChristmasLightBorder();
+
+        noLoop();
+
+        console.log('遊戲初始化完成 - 聖誕夜空背景');
+        validateGameConfig();
+    } catch (error) {
+        console.error('遊戲初始化時發生錯誤:', error);
+    }
+}
+
+// 移除舊的顏色驗證函數，不再需要
+
+// 驗證配置常數是否正確載入
+function validateGameConfig() {
+    console.log('=== 遊戲配置驗證 ===');
+
+    const requiredConfigs = [
+        'GRID_COLS', 'GRID_ROWS', 'DEFAULT_SPEED', 'GAME_DURATION', 'FOOD_CHANGE_INTERVAL',
+        'RESPONSIVE_TEXT_RATIO', 'DEFAULT_BACKGROUND_COLOR', 'FRAME_RATE',
+        'INITIAL_FOOD_COUNT', 'MAX_SPAWN_ATTEMPTS', 'CORE_CHRISTMAS_PROBABILITY',
+        'MOBILE_BREAKPOINT', 'TABLET_BREAKPOINT', 'CANVAS_PADDING'
+    ];
+
+    requiredConfigs.forEach(config => {
+        if (GAME_CONFIG[config] !== undefined) {
+            console.log(`✓ ${config}: ${GAME_CONFIG[config]}`);
+        } else {
+            console.error(`✗ 缺少配置: ${config}`);
+        }
+    });
+
+    // 驗證響應式畫布配置
+    console.log('=== 響應式畫布配置驗證 ===');
+    const canvasSize = calculateOptimalCanvasSize();
+    console.log(`✓ 計算出的畫布大小: ${canvasSize.width}x${canvasSize.height}`);
+    console.log(`✓ Cell 大小: ${canvasSize.cellSize}px`);
+    console.log(`✓ 文字大小: ${getResponsiveTextSize()}px`);
+
+    // 驗證設備檢測
+    const isMobile = windowWidth <= GAME_CONFIG.MOBILE_BREAKPOINT;
+    const isTablet = windowWidth > GAME_CONFIG.MOBILE_BREAKPOINT && windowWidth <= GAME_CONFIG.TABLET_BREAKPOINT;
+    const deviceType = isMobile ? 'Mobile' : isTablet ? 'Tablet' : 'Desktop';
+    console.log(`✓ 設備類型: ${deviceType} (視窗: ${windowWidth}x${windowHeight})`);
+
+    console.log('=== 配置驗證完成 ===');
+}
+
+function startGame() {
+    // 隱藏起始視窗
+    DOMManager.hide('startScreen');
+
+    // 顯示倒數視窗
+    DOMManager.show('countdownScreen');
+    DOMManager.setContent('countdownNumber', 3);
+
+    let count = 3;
+    let countdownInterval = setInterval(() => {
+        count--;
+        if (count > 0) {
+            DOMManager.setContent('countdownNumber', count);
+        } else {
+            clearInterval(countdownInterval);
+            DOMManager.hide('countdownScreen');
+            // 設置遊戲狀態為正在遊戲
+            gameState = 'PLAYING';
+            // 重置遊戲並開始
+            resetGame();
+            // 使用透明背景讓 CSS 控制
+            clear();
+            loop();
+            console.log('遊戲開始！');
+        }
+    }, 1000);
+
+    // 如果找不到倒數視窗元素則直接開始
+    if (!DOMManager.get('countdownScreen') || !DOMManager.get('countdownNumber')) {
+        gameState = 'PLAYING';
+        resetGame();
+        // 使用透明背景讓 CSS 控制
+        clear();
+        loop();
+        console.log('遊戲開始！');
+    }
+}
+
+// 伯利恆之星初始化
+function initializeBethlehemStar() {
+    // 檢查無障礙設計偏好和性能設置
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const isLowPerformance = window.reducedAnimations || false;
+    
+    if (prefersReducedMotion) {
+        bethlehemStar.enabled = false;
+        console.log('⚠️ 偵測到用戶偏好減少動畫，伯利恆之星已停用');
+        return;
+    }
+    
+    if (!bethlehemStar.enabled) return;
+    
+    // 根據設備性能調整參數
+    if (isLowPerformance) {
+        bethlehemStar.moveSpeed = 0.003;     // 提高低性能設備移動速度
+        bethlehemStar.breatheSpeed = 0.02;   // 提高低性能設備呼吸速度
+    } else {
+        bethlehemStar.moveSpeed = 0.006;     // 提高正常移動速度
+        bethlehemStar.breatheSpeed = 0.03;   // 提高正常呼吸速度
+    }
+    
+    bethlehemStar.currentMoveSpeed = bethlehemStar.moveSpeed;
+    
+    // 設定隨機初始位置（整個天空區域）
+    const skyAreaWidth = cols * cell;
+    const skyAreaHeight = rows * cell * 0.6; // 天空區域為上60%
+    
+    bethlehemStar.x = random(skyAreaWidth * 0.1, skyAreaWidth * 0.9);
+    bethlehemStar.y = random(skyAreaHeight * 0.05, skyAreaHeight * 0.8);
+    bethlehemStar.targetX = bethlehemStar.x;
+    bethlehemStar.targetY = bethlehemStar.y;
+    bethlehemStar.lastTargetChange = millis();
+    bethlehemStar.phase = random(0, TWO_PI); // 隨機初始相位
+    bethlehemStar.brightness = 0.7 + random(0.2); // 隨機初始亮度
+    bethlehemStar.haloSize = 12 + random(8); // 隨機初始光暈大小
+    bethlehemStar.specialEffect = false;
+    bethlehemStar.specialEffectEnd = 0;
+    
+    console.log('✨ 伯利恆之星已初始化 - 增強效果');
+}
+
+// 伯利恆之星更新邏輯
+function updateBethlehemStar() {
+    if (!bethlehemStar.enabled) return;
+    
+    // 根據遊戲狀態調整行為
+    let moveSpeedMultiplier = 1;
+    let breatheSpeedMultiplier = 1;
+    
+    switch(gameState) {
+        case 'START':
+            moveSpeedMultiplier = 1.5;  // 開始頁面較活躍
+            break;
+        case 'PLAYING':
+            if (isPaused) {
+                moveSpeedMultiplier = 0;  // 暫停時不移動
+                breatheSpeedMultiplier = 0.3;  // 緩慢呼吸
+            } else {
+                moveSpeedMultiplier = 0.8;  // 遊戲中較溫和
+            }
+            break;
+        case 'OVER':
+            moveSpeedMultiplier = 0.5;  // 結束時緩慢
+            // 移動到祝福位置（中上方）
+            bethlehemStar.targetX = cols * cell * 0.5;
+            bethlehemStar.targetY = rows * cell * 0.15;
+            break;
+    }
+    
+    // 特殊效果處理
+    if (bethlehemStar.specialEffect && millis() < bethlehemStar.specialEffectEnd) {
+        breatheSpeedMultiplier = 3;  // 特殊效果時快速閃爍
+    } else {
+        bethlehemStar.specialEffect = false;
+    }
+    
+    // 每4-8秒隨機選擇新的目標位置（正常狀態下）- 更頻繁的移動
+    if (gameState !== 'OVER' && millis() - bethlehemStar.lastTargetChange > random(4000, 8000)) {
+        // 選擇新的目標位置（更廣闊的天空區域移動）
+        const skyAreaWidth = cols * cell;
+        const skyAreaHeight = rows * cell * 0.7; // 擴大天空區域到70%
+        
+        // 完全隨機的位置選擇
+        bethlehemStar.targetX = random(skyAreaWidth * 0.05, skyAreaWidth * 0.95);
+        bethlehemStar.targetY = random(skyAreaHeight * 0.02, skyAreaHeight * 0.85);
+        bethlehemStar.lastTargetChange = millis();
+        
+        // 隨機調整移動速度，讓每次移動都有不同感覺
+        const speedVariation = random(0.8, 1.4);
+        bethlehemStar.currentMoveSpeed = bethlehemStar.moveSpeed * speedVariation;
+    }
+    
+    // 移動到目標位置（使用可變速度）
+    if (moveSpeedMultiplier > 0) {
+        const currentSpeed = bethlehemStar.currentMoveSpeed || bethlehemStar.moveSpeed;
+        bethlehemStar.x = lerp(bethlehemStar.x, bethlehemStar.targetX, currentSpeed * moveSpeedMultiplier);
+        bethlehemStar.y = lerp(bethlehemStar.y, bethlehemStar.targetY, currentSpeed * moveSpeedMultiplier);
+    }
+    
+    // 增強的呼吸般亮度變化
+    bethlehemStar.phase += bethlehemStar.breatheSpeed * breatheSpeedMultiplier;
+    
+    // 更明顯的呼吸效果：亮度變化範圍從 0.3-1.0
+    bethlehemStar.brightness = 0.3 + 0.7 * (0.5 + 0.5 * sin(bethlehemStar.phase));
+    
+    // 更明顯的光暈大小變化：從 8 到 28
+    bethlehemStar.haloSize = 8 + 20 * (0.5 + 0.5 * sin(bethlehemStar.phase * 0.8));
+    
+    // 添加額外的閃爍效果
+    const flickerPhase = bethlehemStar.phase * 2.3;
+    const flickerIntensity = 0.1 + 0.1 * sin(flickerPhase);
+    bethlehemStar.brightness += flickerIntensity;
+}
+
+// 伯利恆之星繪製函數
+function drawBethlehemStar() {
+    if (!bethlehemStar.enabled) return;
+    
+    push();
+    
+    const starX = bethlehemStar.x;
+    const starY = bethlehemStar.y;
+    const alpha = bethlehemStar.brightness;
+    const baseHaloSize = bethlehemStar.haloSize;
+    
+    // 檢查性能優化設置和響應式調整
+    const isLowPerformance = window.reducedAnimations || false;
+    const isMobile = windowWidth <= GAME_CONFIG.MOBILE_BREAKPOINT;
+    const haloLayers = isLowPerformance ? 3 : (isMobile ? 5 : 8);
+    
+    // 響應式大小調整
+    const sizeMultiplier = isMobile ? 0.7 : 1.0;
+    const adjustedHaloSize = baseHaloSize * sizeMultiplier;
+    
+    // 外層大光暈（溫柔擴散）- 多層繪製營造柔和效果
+    for (let i = 0; i < haloLayers; i++) {
+        const r = adjustedHaloSize * (1.5 - i * 0.15);
+        const haloAlpha = alpha * (1 - i / haloLayers) * 0.08;
+        
+        fill(255, 215, 0, haloAlpha * 255);
+        noStroke();
+        ellipse(starX, starY, r * 2);
+    }
+    
+    // 中層光暈（金色核心）
+    fill(255, 215, 0, alpha * 80);
+    noStroke();
+    ellipse(starX, starY, 12 * sizeMultiplier);
+    
+    // 星星光芒（十字形 + 對角線）- 響應式調整
+    const rayLength = 10 * sizeMultiplier;
+    const rayShort = 7 * sizeMultiplier;
+    const rayVeryShort = 6 * sizeMultiplier;
+    
+    stroke(255, 255, 255, alpha * 200);
+    strokeWeight(1.5 * sizeMultiplier);
+    
+    // 主十字光芒
+    line(starX, starY - rayLength, starX, starY + rayLength);  // 垂直
+    line(starX - rayLength, starY, starX + rayLength, starY);  // 水平
+    
+    // 對角光芒
+    line(starX - rayShort, starY - rayShort, starX + rayShort, starY + rayShort);  // 左上到右下
+    line(starX - rayShort, starY + rayShort, starX + rayShort, starY - rayShort);  // 左下到右上
+    
+    // 較短的次要光芒
+    stroke(255, 255, 255, alpha * 150);
+    strokeWeight(1 * sizeMultiplier);
+    line(starX, starY - rayVeryShort, starX, starY + rayVeryShort);    // 短垂直
+    line(starX - rayVeryShort, starY, starX + rayVeryShort, starY);    // 短水平
+    
+    // 星星核心（白色亮點）
+    fill(255, 255, 255, alpha * 255);
+    noStroke();
+    ellipse(starX, starY, 3 * sizeMultiplier);
+    
+    // 特殊效果：當有特殊事件時閃爍外圈
+    if (bethlehemStar.specialEffect) {
+        const flashAlpha = alpha * sin(frameCount * 0.5) * 0.3;
+        stroke(255, 215, 0, flashAlpha * 255);
+        strokeWeight(2 * sizeMultiplier);
+        noFill();
+        ellipse(starX, starY, adjustedHaloSize * 2);
+        ellipse(starX, starY, adjustedHaloSize * 2.5);
+    }
+    
+    pop();
+}
+
+// 觸發伯利恆之星特殊效果
+function triggerBethlehemStarEffect(duration = 3000) {
+    if (!bethlehemStar.enabled) return;
+    
+    bethlehemStar.specialEffect = true;
+    bethlehemStar.specialEffectEnd = millis() + duration;
+    
+    console.log('✨ 伯利恆之星特殊效果觸發');
+}
+
+// 聖誕燈彩色邊框系統
+function drawChristmasLightBorder() {
+    const canvasWidth = cols * cell;
+    const canvasHeight = rows * cell;
+    
+    // 聖誕燈顏色配置
+    const christmasColors = [
+        [255, 85, 85],    // 紅色
+        [85, 255, 85],    // 綠色  
+        [85, 85, 255],    // 藍色
+        [255, 255, 85],   // 黃色
+        [255, 85, 255],   // 粉紅色
+        [85, 255, 255],   // 青色
+        [255, 165, 85],   // 橙色
+        [255, 255, 255]   // 白色
+    ];
+    
+    // 燈泡大小和間距設定 - 增強版
+    const lightSize = cell * 0.6;  // 增加燈泡大小
+    const spacing = cell * 0.9;    // 調整燈泡間距
+    const borderOffset = lightSize * 2.0; // 大幅增加邊框偏移避免被遮擋
+    
+    // 計算每邊的燈泡數量
+    const topBottomLights = Math.floor(canvasWidth / spacing);
+    const leftRightLights = Math.floor(canvasHeight / spacing);
+    
+    // 閃爍動畫相位 - 增強版
+    const time = millis() * 0.001; // 轉換為秒
+    const blinkSpeed = 1.5; // 稍微放慢閃爍速度，讓效果更明顯
+    
+    // 繪製邊框的四條邊
+    
+    // 上邊
+    for (let i = 0; i < topBottomLights; i++) {
+        const x = (i + 0.5) * spacing;
+        const y = -borderOffset;
+        const colorIndex = i % christmasColors.length;
+        const phase = time * blinkSpeed + (i * 0.3); // 每個燈有不同相位
+        drawChristmasLight(x, y, lightSize, christmasColors[colorIndex], phase);
+    }
+    
+    // 下邊
+    for (let i = 0; i < topBottomLights; i++) {
+        const x = (i + 0.5) * spacing;
+        const y = canvasHeight + borderOffset;
+        const colorIndex = (i + 2) % christmasColors.length; // 偏移顏色
+        const phase = time * blinkSpeed + (i * 0.3) + 1.5;
+        drawChristmasLight(x, y, lightSize, christmasColors[colorIndex], phase);
+    }
+    
+    // 左邊
+    for (let i = 0; i < leftRightLights; i++) {
+        const x = -borderOffset;
+        const y = (i + 0.5) * spacing;
+        const colorIndex = (i + 4) % christmasColors.length;
+        const phase = time * blinkSpeed + (i * 0.3) + 3.0;
+        drawChristmasLight(x, y, lightSize, christmasColors[colorIndex], phase);
+    }
+    
+    // 右邊
+    for (let i = 0; i < leftRightLights; i++) {
+        const x = canvasWidth + borderOffset;
+        const y = (i + 0.5) * spacing;
+        const colorIndex = (i + 6) % christmasColors.length;
+        const phase = time * blinkSpeed + (i * 0.3) + 4.5;
+        drawChristmasLight(x, y, lightSize, christmasColors[colorIndex], phase);
+    }
+    
+    // 繪製邊框線（連接燈泡的電線）- 增強版
+    stroke(80, 80, 80, 180); // 稍微亮一點的電線，半透明
+    strokeWeight(3);
+    noFill();
+    rect(-borderOffset * 0.8, -borderOffset * 0.8, 
+         canvasWidth + borderOffset * 1.6, canvasHeight + borderOffset * 1.6);
+}
+
+// 繪製單個聖誕燈泡 - 增強版
+function drawChristmasLight(x, y, size, baseColor, phase) {
+    push();
+    
+    // 計算增強的亮度（呼吸效果）
+    const brightness = 0.3 + 0.7 * (0.5 + 0.5 * sin(phase));
+    
+    // 外層光暈（總是顯示）
+    const outerGlowAlpha = brightness * 60 + 20;
+    fill(baseColor[0], baseColor[1], baseColor[2], outerGlowAlpha);
+    noStroke();
+    ellipse(x, y, size * 2.2);
+    
+    // 中層光暈
+    fill(baseColor[0], baseColor[1], baseColor[2], outerGlowAlpha * 1.5);
+    ellipse(x, y, size * 1.6);
+    
+    // 燈泡主體 - 增強顏色飽和度
+    const enhancedR = Math.min(255, baseColor[0] * brightness * 1.2);
+    const enhancedG = Math.min(255, baseColor[1] * brightness * 1.2);
+    const enhancedB = Math.min(255, baseColor[2] * brightness * 1.2);
+    
+    fill(enhancedR, enhancedG, enhancedB);
+    stroke(baseColor[0] * 0.3, baseColor[1] * 0.3, baseColor[2] * 0.3);
+    strokeWeight(2);
+    ellipse(x, y, size);
+    
+    // 燈泡高亮 - 更明顯
+    fill(255, 255, 255, brightness * 200 + 80);
+    noStroke();
+    ellipse(x - size * 0.2, y - size * 0.2, size * 0.4);
+    
+    // 燈泡頂部金屬帽 - 更明顯
+    fill(160, 160, 160, 200);
+    stroke(100, 100, 100, 150);
+    strokeWeight(1.5);
+    ellipse(x, y - size * 0.45, size * 0.5, size * 0.25);
+    
+    // 內層亮光核心
+    fill(255, 255, 255, brightness * 100);
+    noStroke();
+    ellipse(x, y, size * 0.4);
+    
+    // 強化光暈效果（高亮度時）
+    if (brightness > 0.6) {
+        const strongGlowAlpha = (brightness - 0.6) * 200;
+        fill(baseColor[0], baseColor[1], baseColor[2], strongGlowAlpha);
+        noStroke();
+        ellipse(x, y, size * 2.8);
+        
+        // 十字光芒效果
+        stroke(baseColor[0], baseColor[1], baseColor[2], strongGlowAlpha);
+        strokeWeight(3);
+        line(x - size, y, x + size, y);
+        line(x, y - size, x, y + size);
+    }
+    
+    pop();
+}
+
+function resetGame() {
+    // 隨機選擇初始方向
+    dir = getRandomDirection();
+
+    // 計算遊戲區域中心位置並初始化蛇的位置
+    initializeSnake();
+
+    // 重置遊戲狀態
+    resetGameState();
+
+    // 初始化食物
+    initializeFoods();
+
+    console.log(`遊戲重置 - 網格: ${cols}x${rows}, 初始方向: ${dir}, 蛇頭位置: (${snake[0].x}, ${snake[0].y}), 蛇身位置: (${snake[1].x}, ${snake[1].y})`);
+}
+
+function initializeSnake() {
+    const centerX = floor(cols / 2);
+    const centerY = floor(rows / 2);
+    snake = getInitialSnakePosition(dir, centerX, centerY);
+}
+
+function resetGameState() {
+    collectedChars = [];
+    collectedCharTypes = [];
+    speed = GAME_CONFIG.DEFAULT_SPEED;
+    t = 0;
+    timer = GAME_CONFIG.GAME_DURATION;
+    stat = { faith: 0, love: 0, hope: 0, peace: 0, joy: 0, praise: 0, wisdom: 0, trust: 0 };
+    ate = [];
+    effectUntil = 0;
+    postEffect = null;
+    foodChangeTimer = millis();
+    isPaused = false;
+    completedPhrases = [];
+    phraseHintShown = false;
+}
+
+// 詞句檢測系統
+function checkForCompletedPhrases() {
+    if (!window.ITEMS || !window.ITEMS.phrases) return [];
+    
+    const newCompletedPhrases = [];
+    const collectedString = collectedChars.join('');
+    
+    // 檢查所有可能的詞句
+    Object.keys(ITEMS.phrases).forEach(phrase => {
+        // 如果還沒完成過這個詞句且收集的字符中包含這個詞句
+        if (!completedPhrases.includes(phrase) && collectedString.includes(phrase)) {
+            newCompletedPhrases.push(phrase);
+            completedPhrases.push(phrase);
+            
+            // 應用詞句特殊效果
+            applyPhraseEffect(phrase);
+            
+            console.log(`🎯 完成詞句：${phrase}`);
+        }
+    });
+    
+    return newCompletedPhrases;
+}
+
+// 字符詞句分析函數 - 檢查每個字符屬於哪個完成的詞句
+function getCharPhraseInfo(charIndex) {
+    if (!completedPhrases || completedPhrases.length === 0) {
+        return null;
+    }
+    
+    const collectedString = ate.join('');
+    const char = ate[charIndex];
+    
+    // 檢查這個字符是否屬於任何完成的詞句
+    for (const phrase of completedPhrases) {
+        const phraseIndex = collectedString.indexOf(phrase);
+        if (phraseIndex !== -1) {
+            const phraseEndIndex = phraseIndex + phrase.length - 1;
+            
+            // 如果當前字符在這個詞句的範圍內
+            if (charIndex >= phraseIndex && charIndex <= phraseEndIndex) {
+                const positionInPhrase = charIndex - phraseIndex;
+                const phraseData = ITEMS.phrases[phrase];
+                
+                return {
+                    phrase: phrase,
+                    positionInPhrase: positionInPhrase,
+                    isFirstChar: positionInPhrase === 0,
+                    isLastChar: positionInPhrase === phrase.length - 1,
+                    phraseLength: phrase.length,
+                    bonus: phraseData ? phraseData.bonus : 0,
+                    effect: phraseData ? phraseData.effect : null,
+                    phraseStartIndex: phraseIndex,
+                    phraseEndIndex: phraseEndIndex
+                };
+            }
+        }
+    }
+    
+    return null;
+}
+
+// 應用詞句特殊效果
+function applyPhraseEffect(phrase) {
+    const phraseData = ITEMS.phrases[phrase];
+    if (!phraseData) return;
+    
+    const effect = phraseData.effect;
+    
+    switch (effect) {
+        case 'goldenGlow':
+            // 金色光芒效果 - 全螢幕閃爍
+            triggerGoldenGlow();
+            break;
+        case 'stableSpeed':
+            // 穩定速度效果
+            applyMul({ speedMul: 1.0, durationMs: 8000 });
+            break;
+        case 'doubleFood':
+            // 雙倍食物效果
+            triggerDoubleFoodSpawn();
+            break;
+        case 'timeExtend':
+            // 延長時間效果
+            timer += 10;
+            console.log('⏰ 時間延長10秒！');
+            break;
+        case 'calmMovement':
+            // 平靜移動效果
+            applyMul({ speedMul: 0.8, durationMs: 6000 });
+            break;
+        case 'speedBoost':
+            // 速度提升效果
+            applyMul({ speedMul: 1.3, durationMs: 4000 });
+            break;
+        case 'slowTime':
+            // 時間減緩效果
+            applyMul({ speedMul: 0.6, durationMs: 5000 });
+            break;
+        default:
+            // 基礎獎勵效果
+            applyMul({ speedMul: 1.1, durationMs: 3000 });
+            break;
+    }
+}
+
+// 特殊效果函數
+function triggerGoldenGlow() {
+    console.log('✨ 金色光芒效果觸發！');
+    
+    // 創建全螢幕金色光芒特效
+    createGoldenGlowEffect();
+    
+    // 暫時的 Canvas 閃爍效果
+    let originalAlpha = 1;
+    let glowFrames = 0;
+    const maxGlowFrames = 30;
+    
+    const glowEffect = setInterval(() => {
+        glowFrames++;
+        const alpha = 0.8 + 0.2 * Math.sin(glowFrames * 0.3);
+        
+        // 在遊戲區域添加金色光暈
+        push();
+        fill(255, 215, 0, alpha * 100);
+        noStroke();
+        rect(0, 0, cols * cell, rows * cell);
+        pop();
+        
+        if (glowFrames >= maxGlowFrames) {
+            clearInterval(glowEffect);
+        }
+    }, 50);
+}
+
+// 創建全螢幕金色光芒DOM效果
+function createGoldenGlowEffect() {
+    const glowDiv = document.createElement('div');
+    glowDiv.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: radial-gradient(circle, rgba(255, 215, 0, 0.3) 0%, transparent 70%);
+        pointer-events: none;
+        z-index: 999;
+        animation: goldenPulse 2s ease-out forwards;
+    `;
+    
+    // 添加動畫樣式
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes goldenPulse {
+            0% { opacity: 0; transform: scale(0.8); }
+            50% { opacity: 1; transform: scale(1.1); }
+            100% { opacity: 0; transform: scale(1.2); }
+        }
+    `;
+    document.head.appendChild(style);
+    
+    document.body.appendChild(glowDiv);
+    
+    // 2秒後移除效果
+    setTimeout(() => {
+        if (glowDiv.parentNode) {
+            glowDiv.parentNode.removeChild(glowDiv);
+        }
+        if (style.parentNode) {
+            style.parentNode.removeChild(style);
+        }
+    }, 2000);
+}
+
+function triggerDoubleFoodSpawn() {
+    // 生成額外食物
+    for (let i = 0; i < 3; i++) {
+        spawnFood();
+    }
+    console.log('🍎 雙倍食物效果！新增3個食物');
+    
+    // 創建食物爆發特效
+    createFoodBurstEffect();
+}
+
+// 創建食物爆發特效
+function createFoodBurstEffect() {
+    const burstDiv = document.createElement('div');
+    burstDiv.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 3em;
+        color: #FFD700;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        pointer-events: none;
+        z-index: 999;
+        animation: foodBurst 1.5s ease-out forwards;
+    `;
+    burstDiv.textContent = '🍎✨🎁✨🍯';
+    
+    // 添加動畫樣式
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes foodBurst {
+            0% { 
+                opacity: 0; 
+                transform: translate(-50%, -50%) scale(0.3) rotate(0deg); 
+            }
+            50% { 
+                opacity: 1; 
+                transform: translate(-50%, -50%) scale(1.2) rotate(180deg); 
+            }
+            100% { 
+                opacity: 0; 
+                transform: translate(-50%, -50%) scale(0.8) rotate(360deg); 
+            }
+        }
+    `;
+    document.head.appendChild(style);
+    
+    document.body.appendChild(burstDiv);
+    
+    // 1.5秒後移除效果
+    setTimeout(() => {
+        if (burstDiv.parentNode) {
+            burstDiv.parentNode.removeChild(burstDiv);
+        }
+        if (style.parentNode) {
+            style.parentNode.removeChild(style);
+        }
+    }, 1500);
+}
+
+function initializeFoods() {
+    foods = [];
+    for (let i = 0; i < GAME_CONFIG.INITIAL_FOOD_COUNT; i++) {
+        spawnFood();
+    }
+}
+
+function draw() {
+    try {
+        // 使用透明背景讓 CSS 聖誕夜空漸層顯示
+        clear();
+
+        // 伯利恆之星特效（在所有其他元素之前繪製，作為背景）
+        updateBethlehemStar();
+        drawBethlehemStar();
+
+        // 僅在前10幀顯示調試信息
+        if (frameCount <= 10) {
+            console.log('Frame', frameCount, '聖誕夜空背景：由 CSS 控制');
+        }
+        
+        // 聖誕燈彩色邊框
+        drawChristmasLightBorder();
+
+        // 只有在遊戲進行中且未暫停才執行遊戲邏輯
+        if (gameState === 'PLAYING' && !isPaused) {
+            // 倒數 & HUD - 添加安全檢查
+            if (frameCount % 16 === 0 && timer > 0) timer--;
+            // 使用 DOMManager 更新 HUD 元素
+            DOMManager.setContent('time', timer);
+            DOMManager.setContent('len', snake.length);
+
+            // 更新速度（結合難度與效果）
+            const baseSpeed = speed * DIFFICULTY_SETTINGS[difficulty].speedMultiplier;
+            let curSpeed = baseSpeed;
+            if (millis() < effectUntil) curSpeed = baseSpeed * (window.currentMul || 1);
+            else if (postEffect) { applyMul(postEffect); postEffect = null; }
+
+            // 以速度決定移動節奏
+            t += curSpeed / 16;
+            if (t >= 1) { t = 0; stepForward(); }
+
+            // 檢查食物變換計時器
+            if (millis() - foodChangeTimer >= GAME_CONFIG.FOOD_CHANGE_INTERVAL) {
+                changeFoodRandomly();
+                foodChangeTimer = millis(); // 重置計時器
+            }
+
+            // 結束
+            if (timer <= 0) return gameOver();
+        }
+
+        // 繪製食物
+        if (foods && foods.length > 0) {
+            foods.forEach(f => {
+                if (f && typeof f.x === 'number' && typeof f.y === 'number' && f.char) {
+                    const foodColor = getFoodColor(f.char);
+
+                    // 繪製食物背景（帶顏色）
+                    fill(foodColor.background);
+                    stroke(foodColor.border);
+                    strokeWeight(2);
+                    rect(f.x * cell + 1, f.y * cell + 1, cell - 2, cell - 2, 4);
+
+                    // 繪製食物文字
+                    fill(foodColor.text);
+                    noStroke();
+                    textAlign(CENTER, CENTER);
+                    textSize(getResponsiveTextSize());
+                    textFont(gameFont);
+                    text(f.char, f.x * cell + cell / 2, f.y * cell + cell / 2);
+                }
+            });
+        }
+
+        // 繪製蛇
+        if (snake && snake.length > 0) {
+            snake.forEach((s, i) => {
+                if (s && typeof s.x === 'number' && typeof s.y === 'number') {
+                    if (i === 0) {
+                        // 蛇頭：繪製三角形箭頭（聖誕金色主題）
+                        // 繪製外層邊框
+                        fill(255, 215, 0);  // 金色填充
+                        stroke(184, 134, 11);  // 深金色邊框
+                        strokeWeight(2);
+                        
+                        const centerX = s.x * cell + cell / 2;
+                        const centerY = s.y * cell + cell / 2;
+                        const size = cell * 0.4;
+
+                        if (dir === 'RIGHT') {
+                            triangle(centerX - size, centerY - size, centerX - size, centerY + size, centerX + size, centerY);
+                        } else if (dir === 'LEFT') {
+                            triangle(centerX + size, centerY - size, centerX + size, centerY + size, centerX - size, centerY);
+                        } else if (dir === 'UP') {
+                            triangle(centerX - size, centerY + size, centerX + size, centerY + size, centerX, centerY - size);
+                        } else if (dir === 'DOWN') {
+                            triangle(centerX - size, centerY - size, centerX + size, centerY - size, centerX, centerY + size);
+                        }
+                        
+                        // 繪製內層高亮
+                        fill(255, 255, 255, 180);  // 半透明白色高亮
+                        noStroke();
+                        const innerSize = size * 0.6;
+                        
+                        if (dir === 'RIGHT') {
+                            triangle(centerX - innerSize, centerY - innerSize, centerX - innerSize, centerY + innerSize, centerX + innerSize, centerY);
+                        } else if (dir === 'LEFT') {
+                            triangle(centerX + innerSize, centerY - innerSize, centerX + innerSize, centerY + innerSize, centerX - innerSize, centerY);
+                        } else if (dir === 'UP') {
+                            triangle(centerX - innerSize, centerY + innerSize, centerX + innerSize, centerY + innerSize, centerX, centerY - innerSize);
+                        } else if (dir === 'DOWN') {
+                            triangle(centerX - innerSize, centerY - innerSize, centerX + innerSize, centerY - innerSize, centerX, centerY + innerSize);
+                        }
+                    } else {
+                        // 蛇身：根據字詞類型顯示顏色
+                        const charIndex = i - 1; // 修正索引計算：i=1對應collectedChars[0]
+                        if (charIndex >= 0 && charIndex < collectedChars.length && collectedChars[charIndex]) {
+                            const char = collectedChars[charIndex];
+                            const charType = collectedCharTypes[charIndex];
+                            const foodColor = FOOD_COLORS[charType] || FOOD_COLORS.default;
+
+                            // 繪製蛇身背景（帶顏色）
+                            fill(foodColor.background);
+                            stroke(foodColor.border);
+                            strokeWeight(1);
+                            rect(s.x * cell + 1, s.y * cell + 1, cell - 2, cell - 2, 2);
+
+                            // 繪製字詞
+                            fill(foodColor.text);
+                            noStroke();
+                            textSize(getResponsiveTextSize());
+                            textAlign(CENTER, CENTER);
+                            textFont(gameFont);
+                            text(char, s.x * cell + cell / 2, s.y * cell + cell / 2);
+                        } else {
+                            // 沒有對應字詞的蛇身（聖誕銀白主題）
+                            fill(220, 220, 220);  // 淺灰色填充
+                            stroke(169, 169, 169);  // 深灰色邊框
+                            strokeWeight(2);
+                            rect(s.x * cell + 1, s.y * cell + 1, cell - 2, cell - 2, 2);
+                            
+                            // 添加內部高亮
+                            fill(255, 255, 255, 120);  // 半透明白色高亮
+                            noStroke();
+                            rect(s.x * cell + 2, s.y * cell + 2, cell - 4, cell - 4, 1);
+                        }
+                    }
+                }
+            });
+        }
+    } catch (error) {
+        console.error('繪製過程中發生錯誤:', error);
+        // 確保遊戲不會因為繪製錯誤而停止
+    }
+}
+
+function stepForward() {
+    const newHead = calculateNewHeadPosition();
+
+    if (isCollision(newHead)) {
+        gameOver();
+        return;
+    }
+
+    snake.unshift(newHead);
+
+    const eatenFood = checkFoodCollision(newHead);
+    if (eatenFood) {
+        handleFoodConsumption(eatenFood);
+    } else {
+        maintainSnakeLength();
+    }
+}
+
+function calculateNewHeadPosition() {
+    const head = { ...snake[0] };
+
+    const movementMap = {
+        'UP': { x: 0, y: -1 },
+        'DOWN': { x: 0, y: 1 },
+        'LEFT': { x: -1, y: 0 },
+        'RIGHT': { x: 1, y: 0 }
+    };
+
+    const movement = movementMap[dir];
+    head.x += movement.x;
+    head.y += movement.y;
+
+    return head;
+}
+
+function isCollision(position) {
+    // 檢查邊界碰撞
+    if (!Utils.isValidPosition(position.x, position.y, cols, rows)) {
+        return true;
+    }
+
+    // 檢查自身碰撞（排除蛇頭）
+    return snake.slice(1).some(segment =>
+        Utils.isSamePosition(position, segment)
+    );
+}
+
+function checkFoodCollision(position) {
+    const foodIndex = foods.findIndex(food =>
+        Utils.isSamePosition(position, food)
+    );
+
+    if (foodIndex !== -1) {
+        const food = foods[foodIndex];
+        foods.splice(foodIndex, 1);
+        return food;
+    }
+
+    return null;
+}
+
+function handleFoodConsumption(food) {
+    const char = food.char;
+    const foodType = getFoodType(char);
+
+    // 記錄收集到的食物
+    collectedChars.push(char);
+    collectedCharTypes.push(foodType);
+
+    // 檢測完成的詞句
+    const newPhrases = checkForCompletedPhrases();
+
+    // 生成新食物
+    spawnFood();
+
+    // 應用食物效果
+    onEat(char);
+
+    // 如果完成新詞句，顯示提示和特效
+    if (newPhrases.length > 0) {
+        newPhrases.forEach(phrase => {
+            console.log(`🎉 恭喜完成詞句：${phrase}！`);
+            createPhraseCompletionEffect(phrase);
+            
+            // 觸發伯利恆之星特殊效果
+            triggerBethlehemStarEffect();
+            
+            // 特殊聖誕詞句有更長的星星特效
+            if (['聖誕快樂', '耶穌愛我', '哈利路亞', '以馬內利'].includes(phrase)) {
+                triggerBethlehemStarEffect(5000); // 5秒特效
+            }
+        });
+    }
+}
+
+function maintainSnakeLength() {
+    // 保持蛇的長度：初始長度2 + 收集的字符數
+    const targetLength = 2 + collectedChars.length;
+    while (snake.length > targetLength) {
+        snake.pop();
+    }
+}
+
+function onEat(ch) {
+    // 屬靈成長統計
+    const spiritualGrowth = (ITEMS.spiritualGrowth[ch] || {});
+    for (const k in spiritualGrowth) {
+        stat[k] = (stat[k] || 0) + spiritualGrowth[k];
+    }
+    ate.push(ch);
+
+    // 即時效果
+    const fx = ITEMS.effects[ch];
+    if (fx) {
+        applyMul({ speedMul: fx.speedMul, durationMs: fx.durationMs });
+        if (fx.after) postEffect = fx.after;
+    }
+
+    // 調試信息：記錄特殊祝福食物的攝取
+    if (['哈', '利', '路', '亞'].includes(ch)) {
+        console.log(`收集到讚美字符: ${ch}, 類型: ${getFoodType(ch)}, 總讚美值: ${stat.praise || 0}`);
+    }
+}
+
+function applyMul({ speedMul = 1, durationMs = 1000 }) {
+    window.currentMul = speedMul;
+    effectUntil = millis() + durationMs;
+}
+
+function spawnFood() {
+    try {
+        // 檢查 ITEMS 物件是否可用
+        if (!window.ITEMS || !window.ITEMS.pool || !Array.isArray(window.ITEMS.pool) || window.ITEMS.pool.length === 0) {
+            console.error('ITEMS.pool 不可用，無法生成食物');
+            return;
+        }
+
+        // 檢查網格大小是否有效
+        if (!cols || !rows || cols <= 0 || rows <= 0) {
+            console.error('網格大小無效，無法生成食物');
+            return;
+        }
+
+        const char = getWeightedFood();
+        let p;
+        let attempts = 0;
+        const maxAttempts = GAME_CONFIG.MAX_SPAWN_ATTEMPTS; // 防止無限迴圈
+
+        do {
+            p = { x: floor(random(cols)), y: floor(random(rows)), char };
+            attempts++;
+
+            if (attempts > maxAttempts) {
+                console.warn('食物生成達到最大嘗試次數，可能網格空間不足');
+                break;
+            }
+        } while (
+            snake.some(s => s.x === p.x && s.y === p.y) ||
+            foods.some(f => f.x === p.x && f.y === p.y) ||
+            // 避免出現在四個角落
+            (p.x === 0 && p.y === 0) ||         // 左上角
+            (p.x === cols - 1 && p.y === 0) || // 右上角
+            (p.x === 0 && p.y === rows - 1) || // 左下角
+            (p.x === cols - 1 && p.y === rows - 1) // 右下角
+        );
+
+        if (p && typeof p.x === 'number' && typeof p.y === 'number' && p.char) {
+            foods.push(p);
+        } else {
+            console.error('食物生成失敗');
+        }
+    } catch (error) {
+        console.error('食物生成過程中發生錯誤:', error);
+    }
+}
+
+function changeDirection(newDirection) {
+    // 只有在遊戲進行中且未暫停才允許轉向
+    if (gameState !== 'PLAYING' || isPaused) return;
+
+    // 防止反方向移動的映射
+    const oppositeDirections = {
+        'UP': 'DOWN',
+        'DOWN': 'UP',
+        'LEFT': 'RIGHT',
+        'RIGHT': 'LEFT'
+    };
+
+    // 防止反方向移動，無論蛇的長度
+    if (oppositeDirections[newDirection] !== dir) {
+        dir = newDirection;
+    }
+}
+
+function gameOver() {
+    noLoop();
+    gameState = 'OVER';
+    isPaused = false; // 重置暫停狀態
+
+    try {
+        // 安全地分析屬靈成長結果
+        let tag, msg;
+        try {
+            tag = Ending.analyze(stat, completedPhrases);
+            msg = Ending.generateGrowthReport(stat, completedPhrases, collectedChars);
+        } catch (error) {
+            console.error('屬靈成長分析過程中發生錯誤:', error);
+            // 使用備用分析邏輯
+            const faith = stat.faith || 0, love = stat.love || 0, hope = stat.hope || 0;
+            const peace = stat.peace || 0, joy = stat.joy || 0;
+            const totalGrowth = faith + love + hope + peace + joy;
+            
+            if (completedPhrases.length > 0) tag = "christmasBlessing";
+            else if (totalGrowth > 50) tag = "abundant";
+            else if (love > faith && love > hope) tag = "highLove";
+            else if (faith > love && faith > hope) tag = "highFaith";
+            else tag = "balanced";
+
+            msg = Ending.getBlessingLine(tag);
+        }
+
+        // 列表 - 使用詞句分組顯示
+        const listEl = document.getElementById('list');
+        if (listEl) {
+            listEl.innerHTML = '';
+            
+            // 創建詞句分組映射
+            const phraseGroups = new Map();
+            const processedIndexes = new Set();
+            
+            // 按詞句長度排序 (長的優先，效果更好)
+            const sortedPhrases = completedPhrases.sort((a, b) => b.length - a.length);
+            
+            // 為每個完成的詞句創建分組
+            sortedPhrases.forEach(phrase => {
+                const collectedString = ate.join('');
+                const phraseIndex = collectedString.indexOf(phrase);
+                
+                if (phraseIndex !== -1) {
+                    const phraseData = ITEMS.phrases[phrase];
+                    const phraseGroup = {
+                        phrase: phrase,
+                        chars: [],
+                        startIndex: phraseIndex,
+                        endIndex: phraseIndex + phrase.length - 1,
+                        bonus: phraseData ? phraseData.bonus : 0
+                    };
+                    
+                    // 收集詞句中的字符
+                    for (let i = phraseIndex; i < phraseIndex + phrase.length; i++) {
+                        if (!processedIndexes.has(i)) {
+                            phraseGroup.chars.push({
+                                char: ate[i],
+                                index: i,
+                                positionInPhrase: i - phraseIndex
+                            });
+                            processedIndexes.add(i);
+                        }
+                    }
+                    
+                    if (phraseGroup.chars.length > 0) {
+                        phraseGroups.set(phrase, phraseGroup);
+                    }
+                }
+            });
+            
+            // 首先顯示完成的詞句分組
+            Array.from(phraseGroups.values())
+                .sort((a, b) => b.bonus - a.bonus) // 按獎勵點數排序
+                .forEach(group => {
+                    // 創建詞句分組容器
+                    const phraseContainer = document.createElement('div');
+                    phraseContainer.className = 'phrase-group';
+                    phraseContainer.setAttribute('data-phrase-length', group.phrase.length);
+                    phraseContainer.setAttribute('data-phrase', group.phrase);
+                    
+                    // 添加詞句標籤
+                    const phraseLabel = document.createElement('div');
+                    phraseLabel.className = 'phrase-label';
+                    
+                    // 根據詞句長度設定不同的圖標
+                    let icon = '✨';
+                    if (group.phrase.length >= 4) icon = '🌟';
+                    else if (group.phrase.length === 3) icon = '⭐';
+                    else icon = '💫';
+                    
+                    phraseLabel.textContent = `${icon} ${group.phrase}`;
+                    phraseContainer.appendChild(phraseLabel);
+                    
+                    // 創建字符容器
+                    const charsContainer = document.createElement('div');
+                    charsContainer.className = 'phrase-chars';
+                    
+                    // 添加詞句字符
+                    group.chars.forEach((charInfo, index) => {
+                        const b = document.createElement('span');
+                        b.className = 'chip completed-phrase-char';
+                        b.textContent = charInfo.char;
+                        
+                        // 根據食物類型設定顏色
+                        const foodType = getFoodType(charInfo.char);
+                        const foodColor = getFoodColor(charInfo.char);
+                        b.style.backgroundColor = foodColor.background;
+                        b.style.border = `3px solid ${foodColor.border}`;
+                        b.style.color = foodColor.text;
+                        b.style.textShadow = '0 1px 2px rgba(255, 255, 255, 0.8)';
+                        b.style.fontWeight = 'bold';
+                        
+                        // 添加詞句相關的 data 屬性
+                        b.setAttribute('data-phrase', group.phrase);
+                        b.setAttribute('data-phrase-length', group.phrase.length);
+                        b.setAttribute('data-position', index);
+                        
+                        charsContainer.appendChild(b);
+                    });
+                    
+                    phraseContainer.appendChild(charsContainer);
+                    listEl.appendChild(phraseContainer);
+                });
+            
+            // 然後顯示未組成詞句的字符
+            ate.forEach((ch, index) => {
+                if (!processedIndexes.has(index)) {
+                    const b = document.createElement('span');
+                    b.className = 'chip';
+                    b.textContent = ch;
+
+                    // 根據食物類型設定顏色
+                    const foodType = getFoodType(ch);
+                    const foodColor = getFoodColor(ch);
+                    b.style.backgroundColor = foodColor.background;
+                    b.style.border = `3px solid ${foodColor.border}`;
+                    b.style.color = foodColor.text;
+                    b.style.textShadow = '0 1px 2px rgba(255, 255, 255, 0.8)';
+                    b.style.fontWeight = 'bold';
+
+                    listEl.appendChild(b);
+                }
+            });
+        }
+
+        // 顯示吃到的字的總數
+        const totalChars = ate.length;
+        const reportEl = document.getElementById('report');
+        if (reportEl) {
+            reportEl.textContent = msg + `\n\n本局共吃到 ${totalChars} 個字。`;
+        }
+
+        // 顯示結束畫面
+        const overEl = document.getElementById('over');
+        if (overEl) {
+            overEl.style.display = 'flex';
+        }
+
+        // 延遲渲染圖表，確保DOM已更新
+        setTimeout(() => {
+            try {
+                renderNutritionChart();
+            } catch (error) {
+                console.error('圖表渲染失敗:', error);
+            }
+        }, 100);
+
+    } catch (error) {
+        console.error('遊戲結束處理過程中發生錯誤:', error);
+        // 確保至少能顯示基本結束畫面
+        const overEl = document.getElementById('over');
+        if (overEl) {
+            overEl.style.display = 'flex';
+        }
+    }
+}
+
+function renderNutritionChart() {
+    const canvas = document.getElementById('nutritionChart');
+    if (!canvas || typeof Chart === 'undefined') {
+        console.warn('Chart.js未載入或Canvas元素不存在');
+        return;
+    }
+
+    // 清除之前的圖表實例
+    const existingChart = Chart.getChart(canvas);
+    if (existingChart) {
+        existingChart.destroy();
+    }
+
+    const ctx = canvas.getContext('2d');
+    new Chart(ctx, {
+        type: 'pie',
+        data: {
+            labels: ['信心', '愛心', '盼望', '平安', '喜樂', '讚美'],
+            datasets: [{
+                data: [
+                    stat.faith || 0, 
+                    stat.love || 0, 
+                    stat.hope || 0, 
+                    stat.peace || 0, 
+                    stat.joy || 0, 
+                    stat.praise || 0
+                ],
+                backgroundColor: [
+                    FOOD_COLORS.faith.border,     // 信心：金色
+                    FOOD_COLORS.sharing.border,   // 愛心：粉紅色  
+                    FOOD_COLORS.christmas.border, // 盼望：黃色
+                    FOOD_COLORS.praise.border,    // 平安：銀色
+                    FOOD_COLORS.christmas.border, // 喜樂：黃色
+                    FOOD_COLORS.praise.border     // 讚美：銀色
+                ],
+                borderWidth: 2,
+                borderColor: '#fff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        font: {
+                            size: 12
+                        }
+                    }
+                },
+                title: {
+                    display: true,
+                    text: '屬靈成長分析',
+                    font: {
+                        size: 16,
+                        weight: 'bold'
+                    }
+                }
+            }
+        }
+    });
+}
+
+function changeFoodRandomly() {
+    // 如果沒有食物，就不執行
+    if (foods.length === 0) return;
+
+    // 隨機選擇一個食物進行變換
+    const randomIndex = floor(random(foods.length));
+    const foodToChange = foods[randomIndex];
+
+    // 給它一個新的字符
+    foodToChange.char = getWeightedFood();
+
+    // 重新定位到新位置
+    let newPosition;
+    do {
+        newPosition = { x: floor(random(cols)), y: floor(random(rows)) };
+    } while (
+        snake.some(s => s.x === newPosition.x && s.y === newPosition.y) ||
+        foods.some((f, i) => i !== randomIndex && f.x === newPosition.x && f.y === newPosition.y) ||
+        // 避免出現在四個角落
+        (newPosition.x === 0 && newPosition.y === 0) ||         // 左上角
+        (newPosition.x === cols - 1 && newPosition.y === 0) || // 右上角
+        (newPosition.x === 0 && newPosition.y === rows - 1) || // 左下角
+        (newPosition.x === cols - 1 && newPosition.y === rows - 1) // 右下角
+    );
+
+    // 更新食物位置
+    foodToChange.x = newPosition.x;
+    foodToChange.y = newPosition.y;
+}
+
+function isFontAvailable(fontName) {
+    // 建立一個測試畫布
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+
+    // 測試文字（使用不同的測試字符）
+    const testTexts = ['測試', 'Test', '字體', 'Font'];
+    const fallbackFont = 'monospace';
+
+    // 設定字體大小
+    const fontSize = 72;
+
+    for (let testText of testTexts) {
+        // 測試預設字體寬度
+        ctx.font = `${fontSize}px ${fallbackFont}`;
+        const defaultWidth = ctx.measureText(testText).width;
+
+        // 測試目標字體寬度（多種格式）
+        const fontFormats = [
+            `${fontSize}px "${fontName}", ${fallbackFont}`,
+            `${fontSize}px '${fontName}', ${fallbackFont}`,
+            `${fontSize}px ${fontName}, ${fallbackFont}`
+        ];
+
+        for (let format of fontFormats) {
+            ctx.font = format;
+            const testWidth = ctx.measureText(testText).width;
+
+            // 如果寬度不同，表示字體有載入
+            if (testWidth !== defaultWidth) {
+                console.log(`字體檢測成功: ${fontName}, 使用格式: ${format}, 測試字: ${testText}`);
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+function detectAndSetFont() {
+    console.log('開始字體檢測...');
+
+    const testFonts = [
+        "LINE Seed TW_OTF Bold",
+        "LINE Seed TW_OTF",
+        "LINE Seed TW_OTF Regular",
+        "LINE Seed TW_OTF ExtraBold",
+        "LINE Seed TW_OTF Thin",
+        "LINE Seed TW OTF Bold",
+        "LINESeedTW-Bold",
+        "LINE Seed TW Bold",
+        "LINE Seed TW",
+        "PingFang TC",
+        "Microsoft JhengHei",
+        "Noto Sans TC",
+        "system-ui",
+        "sans-serif"
+    ];
+
+    for (let font of testFonts) {
+        console.log(`正在檢測字體: ${font}`);
+        if (isFontAvailable(font)) {
+            console.log(`✅ 找到可用字體: ${font}`);
+            return font;
+        } else {
+            console.log(`❌ 字體不可用: ${font}`);
+        }
+    }
+
+    console.log('❌ 沒有找到任何指定字體，使用預設字體: sans-serif');
+    return 'sans-serif';
+}
+
+function calculateResponsiveParameters() {
+    // 已被 calculateOptimalCanvasSize 取代，保留此函數以防其他地方使用
+    console.log('calculateResponsiveParameters 已被 calculateOptimalCanvasSize 取代');
+}
+
+function getResponsiveTextSize() {
+    // 根據cell大小和設備類型調整文字大小
+    const isMobile = windowWidth <= GAME_CONFIG.MOBILE_BREAKPOINT;
+    const isTablet = windowWidth > GAME_CONFIG.MOBILE_BREAKPOINT && windowWidth <= GAME_CONFIG.TABLET_BREAKPOINT;
+
+    let textRatio;
+    if (isMobile) {
+        // 手機上使用較大的文字比例以確保可讀性
+        textRatio = cell <= 16 ? 0.8 : 0.75;
+    } else if (isTablet) {
+        textRatio = 0.7;
+    } else {
+        textRatio = 0.65; // 桌面使用較小比例
+    }
+
+    const baseSize = cell * textRatio;
+
+    // 確保文字大小在合理範圍內
+    const minSize = isMobile ? 10 : 12;
+    const maxSize = isMobile ? 24 : 20;
+
+    return Math.max(minSize, Math.min(maxSize, baseSize));
+}
+
+function windowResized() {
+    try {
+        // 暫停遊戲以防止調整過程中的異常
+        const wasLooping = isLooping();
+        if (wasLooping) noLoop();
+
+        // 重新計算Canvas大小和cell大小
+        const canvasSize = calculateOptimalCanvasSize();
+        resizeCanvas(canvasSize.width, canvasSize.height);
+
+        // 更新cell大小（網格大小保持固定）
+        cell = canvasSize.cellSize;
+
+        console.log(`視窗大小改變: ${windowWidth}x${windowHeight}, Canvas: ${canvasSize.width}x${canvasSize.height}, Cell: ${cell}, 網格: ${cols}x${rows}（固定）`);
+
+        // 檢查並修正遊戲物件位置（如果需要）
+        if (snake && snake.length > 0) {
+            adjustGameObjectsToNewGrid(GAME_CONFIG.GRID_COLS, GAME_CONFIG.GRID_ROWS);
+        }
+        
+        // 重新初始化伯利恆之星位置以適應新的畫布大小
+        initializeBethlehemStar();
+
+        // 恢復遊戲
+        if (wasLooping) loop();
+    } catch (error) {
+        console.error('視窗調整過程中發生錯誤:', error);
+        // 發生錯誤時確保遊戲能繼續運行
+        loop();
+    }
+}
+
+function adjustGameObjectsToNewGrid(oldCols, oldRows) {
+    // 檢查蛇是否超出新邊界
+    let needsAdjustment = false;
+
+    snake.forEach(segment => {
+        if (segment.x >= cols || segment.y >= rows) {
+            needsAdjustment = true;
+        }
+    });
+
+    // 檢查食物是否超出新邊界
+    foods.forEach(food => {
+        if (food.x >= cols || food.y >= rows) {
+            needsAdjustment = true;
+        }
+    });
+
+    if (needsAdjustment) {
+        console.log('偵測到物件超出新邊界，進行安全重新定位');
+
+        // 安全重新定位蛇的位置
+        const centerX = Math.max(1, Math.floor(cols / 2));
+        const centerY = Math.max(1, Math.floor(rows / 2));
+
+        // 確保蛇頭在安全區域
+        snake[0].x = Math.min(centerX, cols - 2);
+        snake[0].y = Math.min(centerY, rows - 2);
+
+        // 重新定位蛇身，確保不超出邊界
+        for (let i = 1; i < snake.length; i++) {
+            if (dir === 'RIGHT') {
+                snake[i].x = Math.max(0, snake[0].x - i);
+                snake[i].y = snake[0].y;
+            } else if (dir === 'LEFT') {
+                snake[i].x = Math.min(cols - 1, snake[0].x + i);
+                snake[i].y = snake[0].y;
+            } else if (dir === 'DOWN') {
+                snake[i].x = snake[0].x;
+                snake[i].y = Math.max(0, snake[0].y - i);
+            } else { // UP
+                snake[i].x = snake[0].x;
+                snake[i].y = Math.min(rows - 1, snake[0].y + i);
+            }
+        }
+
+        // 重新生成所有食物確保位置有效
+        foods = [];
+        for (let i = 0; i < 10; i++) {
+            spawnFood();
+        }
+    }
+}
+
+function sel(q) { return select(q); }
+
+// 隨機方向相關函數
+function getRandomDirection() {
+    const directions = ['UP', 'DOWN', 'LEFT', 'RIGHT'];
+    return directions[floor(random(directions.length))];
+}
+
+function getInitialSnakePosition(direction, centerX, centerY) {
+    // 確保有足夠空間：離邊界至少2格距離
+    const minDistance = 2;
+    const safeX = Math.max(minDistance, Math.min(centerX, cols - minDistance - 1));
+    const safeY = Math.max(minDistance, Math.min(centerY, rows - minDistance - 1));
+
+    let head, body;
+
+    switch (direction) {
+        case 'UP':
+            // 向上移動：蛇身在蛇頭下方
+            head = { x: safeX, y: safeY };
+            body = { x: safeX, y: safeY + 1 };
+            break;
+        case 'DOWN':
+            // 向下移動：蛇身在蛇頭上方
+            head = { x: safeX, y: safeY };
+            body = { x: safeX, y: safeY - 1 };
+            break;
+        case 'LEFT':
+            // 向左移動：蛇身在蛇頭右方
+            head = { x: safeX, y: safeY };
+            body = { x: safeX + 1, y: safeY };
+            break;
+        case 'RIGHT':
+        default:
+            // 向右移動：蛇身在蛇頭左方
+            head = { x: safeX, y: safeY };
+            body = { x: safeX - 1, y: safeY };
+            break;
+    }
+
+    // 雙重檢查：確保蛇的所有部分都在遊戲邊界內
+    const validHead = head.x >= 0 && head.x < cols && head.y >= 0 && head.y < rows;
+    const validBody = body.x >= 0 && body.x < cols && body.y >= 0 && body.y < rows;
+
+    if (!validHead || !validBody) {
+        console.warn(`初始位置警告: 方向=${direction}, 蛇頭=(${head.x},${head.y}), 蛇身=(${body.x},${body.y}), 網格大小=(${cols},${rows})`);
+        // 如果計算出的位置無效，回到更安全的中心位置
+        const fallbackX = Math.floor(cols / 2);
+        const fallbackY = Math.floor(rows / 2);
+        return [
+            { x: fallbackX, y: fallbackY },
+            { x: Math.max(0, fallbackX - 1), y: fallbackY }
+        ];
+    }
+
+    return [head, body];
+}
+
+// 暫停功能相關函數
+function togglePause() {
+    if (gameState !== 'PLAYING') return;
+
+    isPaused = !isPaused;
+
+    if (isPaused) {
+        pauseGame();
+    } else {
+        resumeGame();
+    }
+}
+
+function pauseGame() {
+    if (gameState !== 'PLAYING') return;
+
+    noLoop();
+    console.log('遊戲已暫停 - 按P鍵繼續');
+}
+
+function resumeGame() {
+    if (gameState !== 'PLAYING') return;
+
+    loop();
+    console.log('遊戲已繼續');
+}
+
+function getGamePausedState() {
+    return isPaused;
+}
+
+function setupDifficultySelector() {
+    // 獲取所有難度按鈕
+    const difficultyButtons = document.querySelectorAll('.difficulty-btn');
+
+    // 設定預設選中簡單難度
+    const defaultButton = document.querySelector('[data-difficulty="easy"]');
+    if (defaultButton) {
+        defaultButton.classList.add('selected');
+    }
+
+    // 為每個按鈕添加點擊事件
+    difficultyButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            // 移除所有按鈕的選中狀態
+            difficultyButtons.forEach(btn => btn.classList.remove('selected'));
+
+            // 設定當前按鈕為選中狀態
+            button.classList.add('selected');
+
+            // 更新難度設定
+            difficulty = button.getAttribute('data-difficulty');
+
+            console.log(`難度已變更為: ${DIFFICULTY_SETTINGS[difficulty].name}`);
+        });
+    });
+
+    console.log('難度選擇器初始化完成，預設難度：簡單');
+}
+
+// 移除舊的背景顏色設定函數 - 現在由 CSS 聖誕夜空漸層控制
+
+// 設置說明頁按鈕
+function setupHelpButtons() {
+    // 從開始頁進入說明頁
+    const helpButton = select('#help-button');
+    if (helpButton) {
+        helpButton.mousePressed(() => {
+            previousScreen = 'START';
+            showHelpScreen();
+        });
+    } else {
+        console.warn('找不到說明頁按鈕元素 #help-button');
+    }
+
+    // 從結束頁進入說明頁
+    const helpFromEndButton = select('#help-from-end-button');
+    if (helpFromEndButton) {
+        helpFromEndButton.mousePressed(() => {
+            previousScreen = 'END';
+            showHelpScreen();
+        });
+    } else {
+        console.warn('找不到結束頁說明按鈕元素 #help-from-end-button');
+    }
+
+    // 返回按鈕
+    const helpBackButton = select('#help-back-button');
+    if (helpBackButton) {
+        helpBackButton.mousePressed(hideHelpScreen);
+    } else {
+        console.warn('找不到說明頁返回按鈕元素 #help-back-button');
+    }
+}
+
+// 顯示說明頁
+function showHelpScreen() {
+    console.log(`顯示說明頁，上一頁：${previousScreen}`);
+
+    // 隱藏所有其他畫面
+    const startScreen = select('#start-screen');
+    const overScreen = select('#over');
+    if (startScreen) startScreen.style('display', 'none');
+    if (overScreen) overScreen.style('display', 'none');
+
+    // 生成食物說明內容
+    generateFoodHelp();
+
+    // 顯示說明頁
+    const helpScreen = select('#help-screen');
+    if (helpScreen) {
+        helpScreen.style('display', 'flex');
+    }
+}
+
+// 隱藏說明頁，返回上一頁
+function hideHelpScreen() {
+    console.log(`隱藏說明頁，返回：${previousScreen}`);
+
+    const helpScreen = select('#help-screen');
+    if (helpScreen) {
+        helpScreen.style('display', 'none');
+    }
+
+    // 根據上一頁顯示對應畫面
+    if (previousScreen === 'START') {
+        const startScreen = select('#start-screen');
+        if (startScreen) {
+            startScreen.style('display', 'flex');
+        }
+    } else if (previousScreen === 'END') {
+        const overScreen = select('#over');
+        if (overScreen) {
+            overScreen.style('display', 'flex');
+        }
+    }
+}
+
+// 生成食物說明內容
+function generateFoodHelp() {
+    const categoriesContainer = select('#food-categories');
+    if (!categoriesContainer || !window.ITEMS) {
+        console.warn('無法生成食物說明：容器或 ITEMS 資料不存在');
+        return;
+    }
+
+    // 清空現有內容
+    categoriesContainer.html('');
+
+    // 聖誕祝福分類
+    const categories = {
+        faith: {
+            name: '📿 信仰核心',
+            items: ['主', '神', '耶', '穌', '愛', '信'],
+            description: '穩定持久的力量，建立堅固的信心根基'
+        },
+        christmas: {
+            name: '⭐ 聖誕慶典',
+            items: ['聖', '誕', '快', '樂', '夜', '音'],
+            description: '歡樂的能量爆發，帶來節慶的喜悅'
+        },
+        blessing: {
+            name: '🎁 祝福話語',
+            items: ['平', '安', '福', '恩', '典', '惠'],
+            description: '溫暖的祝福力量，帶來心靈的安慰'
+        },
+        praise: {
+            name: '🕊️ 讚美敬拜',
+            items: ['哈', '利', '路', '亞', '讚', '美'],
+            description: '屬靈的升華，讚美中得著力量'
+        },
+        sharing: {
+            name: '❤️ 愛的分享',
+            items: ['分', '享', '溫', '暖', '人', '心'],
+            description: '溫馨的情感力量，在愛中彼此建造'
+        }
+    };
+
+    // 為每個分類創建 HTML
+    Object.entries(categories).forEach(([key, category]) => {
+        const categoryDiv = createDiv('');
+        categoryDiv.addClass('food-category');
+
+        const title = createElement('h4', category.name);
+        categoryDiv.child(title);
+
+        const itemsDiv = createDiv('');
+        itemsDiv.addClass('food-items');
+
+        category.items.forEach(char => {
+            const itemDiv = createDiv('');
+            itemDiv.addClass('food-item');
+
+            // 根據食物類型設置顏色
+            const foodType = getFoodType(char);
+            const foodColor = FOOD_COLORS[foodType];
+            itemDiv.style('background-color', foodColor.background);
+            itemDiv.style('border', `2px solid ${foodColor.border}`);
+            itemDiv.style('color', foodColor.text);
+
+            // 添加字符和效果說明
+            const charSpan = createSpan(char);
+            charSpan.addClass('char');
+            itemDiv.child(charSpan);
+
+            // 獲取效果資訊
+            const effect = ITEMS.effects[char];
+            const spiritualData = ITEMS.spiritualGrowth[char];
+            let effectText = '';
+
+            if (effect) {
+                if (effect.speedMul > 1) {
+                    effectText = '加速';
+                } else if (effect.speedMul < 1) {
+                    effectText = '減速';
+                } else {
+                    effectText = '穩定';
+                }
+            }
+
+            if (effectText) {
+                const effectSpan = createSpan(effectText);
+                itemDiv.child(effectSpan);
+            }
+
+            itemsDiv.child(itemDiv);
+        });
+
+        categoryDiv.child(itemsDiv);
+
+        const descDiv = createDiv(category.description);
+        descDiv.addClass('category-desc');
+        categoryDiv.child(descDiv);
+
+        categoriesContainer.child(categoryDiv);
+    });
+
+    console.log('食物說明內容已生成');
+}
+
+// 創建詞句完成特效
+function createPhraseCompletionEffect(phrase) {
+    // 性能優化：如果是低性能設備，使用簡化版特效
+    if (window.reducedAnimations) {
+        createSimplePhraseEffect(phrase);
+        return;
+    }
+    const effectDiv = document.createElement('div');
+    effectDiv.style.cssText = `
+        position: fixed;
+        top: 20%;
+        left: 50%;
+        transform: translateX(-50%);
+        background: linear-gradient(45deg, rgba(255, 215, 0, 0.9), rgba(255, 255, 255, 0.8));
+        color: #013;
+        padding: 15px 25px;
+        border-radius: 20px;
+        font-size: 1.5em;
+        font-weight: bold;
+        text-align: center;
+        box-shadow: 0 10px 30px rgba(255, 215, 0, 0.4);
+        pointer-events: none;
+        z-index: 1000;
+        animation: phraseComplete 3s ease-out forwards;
+        border: 3px solid rgba(255, 215, 0, 0.6);
+    `;
+    effectDiv.innerHTML = `🎉 恭喜完成<br><span style="font-size: 1.2em; color: #8B0000;">${phrase}</span> 🎉`;
+    
+    // 添加動畫樣式
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes phraseComplete {
+            0% { 
+                opacity: 0; 
+                transform: translateX(-50%) translateY(-50px) scale(0.5); 
+            }
+            20% { 
+                opacity: 1; 
+                transform: translateX(-50%) translateY(0px) scale(1.1); 
+            }
+            80% { 
+                opacity: 1; 
+                transform: translateX(-50%) translateY(0px) scale(1); 
+            }
+            100% { 
+                opacity: 0; 
+                transform: translateX(-50%) translateY(-30px) scale(0.8); 
+            }
+        }
+    `;
+    document.head.appendChild(style);
+    
+    document.body.appendChild(effectDiv);
+    
+    // 3秒後移除效果
+    setTimeout(() => {
+        if (effectDiv.parentNode) {
+            effectDiv.parentNode.removeChild(effectDiv);
+        }
+        if (style.parentNode) {
+            style.parentNode.removeChild(style);
+        }
+    }, 3000);
+    
+    // 添加慶祝煙火效果
+    createCelebrationFireworks();
+}
+
+// 創建慶祝煙火效果
+function createCelebrationFireworks() {
+    for (let i = 0; i < 5; i++) {
+        setTimeout(() => {
+            const firework = document.createElement('div');
+            firework.style.cssText = `
+                position: fixed;
+                top: ${Math.random() * 40 + 20}%;
+                left: ${Math.random() * 80 + 10}%;
+                font-size: 2em;
+                pointer-events: none;
+                z-index: 999;
+                animation: fireworkPop 1s ease-out forwards;
+            `;
+            firework.textContent = ['✨', '🎆', '🎇', '⭐', '💫'][Math.floor(Math.random() * 5)];
+            
+            // 添加煙火動畫
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes fireworkPop {
+                    0% { 
+                        opacity: 0; 
+                        transform: scale(0.3); 
+                    }
+                    50% { 
+                        opacity: 1; 
+                        transform: scale(1.5); 
+                    }
+                    100% { 
+                        opacity: 0; 
+                        transform: scale(2); 
+                    }
+                }
+            `;
+            document.head.appendChild(style);
+            
+            document.body.appendChild(firework);
+            
+            // 1秒後移除
+            setTimeout(() => {
+                if (firework.parentNode) {
+                    firework.parentNode.removeChild(firework);
+                }
+                if (style.parentNode) {
+                    style.parentNode.removeChild(style);
+                }
+            }, 1000);
+        }, i * 200);
+    }
+}
+
+// 簡化版詞句完成特效（適用於低性能設備）
+function createSimplePhraseEffect(phrase) {
+    const effectDiv = document.createElement('div');
+    effectDiv.style.cssText = `
+        position: fixed;
+        top: 30%;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(255, 215, 0, 0.9);
+        color: #013;
+        padding: 10px 20px;
+        border-radius: 15px;
+        font-size: 1.2em;
+        font-weight: bold;
+        text-align: center;
+        pointer-events: none;
+        z-index: 1000;
+        transition: opacity 0.3s ease;
+    `;
+    effectDiv.textContent = `🎉 完成：${phrase} 🎉`;
+    
+    document.body.appendChild(effectDiv);
+    
+    // 2秒後淡出移除
+    setTimeout(() => {
+        effectDiv.style.opacity = '0';
+        setTimeout(() => {
+            if (effectDiv.parentNode) {
+                effectDiv.parentNode.removeChild(effectDiv);
+            }
+        }, 300);
+    }, 2000);
+}
