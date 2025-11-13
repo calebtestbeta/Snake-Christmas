@@ -343,6 +343,11 @@
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
             position: relative;
             z-index: 2001;
+            
+            /* Mobile viewport overflow prevention */
+            max-height: 85vh;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
         }
 
         #card h2 {
@@ -1281,6 +1286,161 @@
                 font-size: 0.85em;
             }
         }
+
+        /* 遊戲結束頁面移動端視窗高度優化 */
+        @media (max-height: 800px) and (max-width: 480px) {
+            #card {
+                max-height: 90vh;
+                padding: 20px 15px;
+            }
+            
+            #card h2 {
+                font-size: 1.6em;
+                margin: 0 0 12px 0;
+            }
+            
+            #list {
+                margin: 12px 0 15px 0;
+                padding: 12px;
+                font-size: 15px;
+            }
+            
+            #report {
+                margin: 12px 0 18px 0;
+                padding: 10px;
+                font-size: 0.9em;
+                line-height: 1.4;
+            }
+            
+            #nutritionChart {
+                max-width: 180px;
+                max-height: 180px;
+                margin: 10px auto 12px auto;
+            }
+            
+            #end-buttons {
+                margin-top: 12px;
+                gap: 6px;
+            }
+        }
+
+        /* 超短螢幕激進優化 (iPhone SE 橫屏等) */
+        @media (max-height: 600px) and (max-width: 480px) {
+            #card {
+                max-height: 95vh;
+                padding: 15px 12px;
+            }
+            
+            #card h2 {
+                font-size: 1.4em;
+                margin: 0 0 8px 0;
+            }
+            
+            #list {
+                margin: 8px 0 10px 0;
+                padding: 8px;
+                font-size: 14px;
+            }
+            
+            .chip {
+                padding: 3px 8px;
+                font-size: 13px;
+            }
+            
+            .phrase-group {
+                margin: 8px 0;
+                padding: 8px;
+            }
+            
+            .phrase-label {
+                font-size: 0.95em;
+                margin-bottom: 6px;
+            }
+            
+            #report {
+                margin: 8px 0 12px 0;
+                padding: 8px;
+                font-size: 0.85em;
+                line-height: 1.3;
+            }
+            
+            #nutritionChart {
+                max-width: 150px;
+                max-height: 150px;
+                margin: 8px auto 10px auto;
+            }
+            
+            #end-buttons {
+                margin-top: 10px;
+                gap: 5px;
+            }
+            
+            #card button, .secondary-button {
+                font-size: 0.9em;
+                padding: 8px 14px;
+                min-width: 120px;
+            }
+        }
+
+        /* 極短螢幕終極優化 (iPhone SE 橫屏等極端情況) */
+        @media (max-height: 500px) and (max-width: 480px) {
+            #card {
+                max-height: 98vh;
+                padding: 10px 8px;
+            }
+            
+            #card h2 {
+                font-size: 1.2em;
+                margin: 0 0 6px 0;
+            }
+            
+            #list {
+                margin: 6px 0 8px 0;
+                padding: 6px;
+                font-size: 13px;
+            }
+            
+            .chip {
+                padding: 2px 6px;
+                font-size: 12px;
+            }
+            
+            .phrase-group {
+                margin: 6px 0;
+                padding: 6px;
+            }
+            
+            .phrase-label {
+                font-size: 0.9em;
+                margin-bottom: 4px;
+            }
+            
+            #report {
+                margin: 6px 0 8px 0;
+                padding: 6px;
+                font-size: 0.8em;
+                line-height: 1.25;
+            }
+            
+            #nutritionChart {
+                max-width: 120px;
+                max-height: 120px;
+                margin: 6px auto 8px auto;
+            }
+            
+            #end-buttons {
+                margin-top: 8px;
+                gap: 4px;
+                flex-direction: column;
+            }
+            
+            #card button, .secondary-button {
+                font-size: 0.85em;
+                padding: 6px 12px;
+                min-width: 100px;
+                width: 100%;
+            }
+        }
         
         /* 性能優化模式 - 自動偵測低性能設備 */
         .performance-optimized body::before {
@@ -1417,7 +1577,7 @@
                 font-size: 16px;
             }
 
-            /* 手機版結束視窗 */
+            /* 手機版結束視窗 - 基礎優化 */
             #card {
                 padding: 25px 20px;
                 width: min(95%, 400px);
@@ -1441,9 +1601,10 @@
             }
 
             #report {
-                margin: 15px 0 25px 0;
+                margin: 15px 0 20px 0;
                 padding: 12px;
                 font-size: 1em;
+                line-height: 1.5;
             }
 
             #card button {
