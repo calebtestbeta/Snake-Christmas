@@ -1695,27 +1695,96 @@ function gameOver() {
                 }
             });
             
+            // 添加收集統計摘要
+            if (completedPhrases.length > 0 || ate.length > 0) {
+                const summaryContainer = document.createElement('div');
+                summaryContainer.className = 'collection-summary';
+                summaryContainer.style.cssText = `
+                    margin-bottom: 20px;
+                    padding: 15px;
+                    background: linear-gradient(135deg, 
+                        rgba(255, 248, 220, 0.8) 0%, 
+                        rgba(255, 255, 255, 0.6) 100%);
+                    border-radius: 12px;
+                    border: 2px solid rgba(255, 215, 0, 0.4);
+                    text-align: center;
+                    animation: slideInFromTop 0.4s ease-out;
+                `;
+                
+                const totalBonus = Array.from(phraseGroups.values()).reduce((sum, group) => sum + group.bonus, 0);
+                const phrasesByRarity = {
+                    legendary: Array.from(phraseGroups.values()).filter(g => g.phrase.length >= 4).length,
+                    rare: Array.from(phraseGroups.values()).filter(g => g.phrase.length === 3).length,
+                    common: Array.from(phraseGroups.values()).filter(g => g.phrase.length === 2).length
+                };
+                
+                summaryContainer.innerHTML = `
+                    <div style="font-weight: bold; font-size: 1.1em; color: #B8860B; margin-bottom: 8px;">
+                        🎄 本局收集成果 🎄
+                    </div>
+                    <div style="display: flex; justify-content: space-around; flex-wrap: wrap; gap: 10px; font-size: 0.9em;">
+                        <span style="color: #333;">📝 總字符: <strong>${ate.length}</strong></span>
+                        <span style="color: #333;">🎯 完成詞句: <strong>${completedPhrases.length}</strong></span>
+                        <span style="color: #333;">⭐ 總獎勵: <strong>${totalBonus}</strong></span>
+                    </div>
+                    ${phrasesByRarity.legendary > 0 || phrasesByRarity.rare > 0 || phrasesByRarity.common > 0 ? `
+                        <div style="margin-top: 8px; font-size: 0.85em; color: #666;">
+                            ${phrasesByRarity.legendary > 0 ? `🌟傳奇 ${phrasesByRarity.legendary} ` : ''}
+                            ${phrasesByRarity.rare > 0 ? `⭐稀有 ${phrasesByRarity.rare} ` : ''}
+                            ${phrasesByRarity.common > 0 ? `💫基礎 ${phrasesByRarity.common}` : ''}
+                        </div>
+                    ` : ''}
+                `;
+                
+                listEl.appendChild(summaryContainer);
+            }
+
             // 首先顯示完成的詞句分組
             Array.from(phraseGroups.values())
                 .sort((a, b) => b.bonus - a.bonus) // 按獎勵點數排序
-                .forEach(group => {
+                .forEach((group, index) => {
                     // 創建詞句分組容器
                     const phraseContainer = document.createElement('div');
                     phraseContainer.className = 'phrase-group';
                     phraseContainer.setAttribute('data-phrase-length', group.phrase.length);
                     phraseContainer.setAttribute('data-phrase', group.phrase);
                     
+                    // 添加漸進式顯示動畫
+                    phraseContainer.style.animationDelay = `${index * 0.15}s`;
+                    phraseContainer.style.opacity = '0';
+                    phraseContainer.style.transform = 'translateY(-15px) scale(0.95)';
+                    
+                    // 使用 setTimeout 來觸發動畫
+                    setTimeout(() => {
+                        phraseContainer.style.opacity = '1';
+                        phraseContainer.style.transform = 'translateY(0) scale(1)';
+                        phraseContainer.style.transition = 'all 0.6s ease-out';
+                    }, index * 150);
+                    
                     // 添加詞句標籤
                     const phraseLabel = document.createElement('div');
                     phraseLabel.className = 'phrase-label';
                     
-                    // 根據詞句長度設定不同的圖標
+                    // 根據詞句長度設定不同的圖標和獎勵顯示
                     let icon = '✨';
-                    if (group.phrase.length >= 4) icon = '🌟';
-                    else if (group.phrase.length === 3) icon = '⭐';
-                    else icon = '💫';
+                    let rarityText = '';
+                    if (group.phrase.length >= 4) {
+                        icon = '🌟';
+                        rarityText = '傳奇';
+                    } else if (group.phrase.length === 3) {
+                        icon = '⭐';
+                        rarityText = '稀有';
+                    } else {
+                        icon = '💫';
+                        rarityText = '基礎';
+                    }
                     
-                    phraseLabel.textContent = `${icon} ${group.phrase}`;
+                    phraseLabel.innerHTML = `
+                        ${icon} ${group.phrase} 
+                        <span style="font-size: 0.8em; color: #8B6914; opacity: 0.8; margin-left: 5px;">
+                            (${rarityText} +${group.bonus})
+                        </span>
+                    `;
                     phraseContainer.appendChild(phraseLabel);
                     
                     // 創建字符容器
@@ -1749,25 +1818,72 @@ function gameOver() {
                     listEl.appendChild(phraseContainer);
                 });
             
-            // 然後顯示未組成詞句的字符
-            ate.forEach((ch, index) => {
-                if (!processedIndexes.has(index)) {
+            // 然後顯示未組成詞句的字符 - 添加分組顯示
+            const individualChars = ate.filter((ch, index) => !processedIndexes.has(index));
+            
+            if (individualChars.length > 0) {
+                // 創建個別字符分組容器
+                const individualContainer = document.createElement('div');
+                individualContainer.className = 'individual-chars-group';
+                individualContainer.style.cssText = `
+                    margin-top: 20px;
+                    padding: 12px;
+                    background: linear-gradient(135deg, 
+                        rgba(240, 248, 255, 0.6) 0%, 
+                        rgba(255, 255, 255, 0.4) 100%);
+                    border-radius: 12px;
+                    border: 2px solid rgba(176, 196, 222, 0.4);
+                `;
+                
+                // 添加標題
+                const charLabel = document.createElement('div');
+                charLabel.textContent = `💎 個別收集的字符 (${individualChars.length} 個)`;
+                charLabel.style.cssText = `
+                    text-align: center;
+                    font-weight: bold;
+                    font-size: 0.95em;
+                    color: #4682B4;
+                    margin-bottom: 10px;
+                    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+                `;
+                individualContainer.appendChild(charLabel);
+                
+                // 創建字符容器
+                const charsContainer = document.createElement('div');
+                charsContainer.style.cssText = `
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 6px;
+                    justify-content: center;
+                `;
+                
+                individualChars.forEach((ch, i) => {
                     const b = document.createElement('span');
-                    b.className = 'chip';
+                    b.className = 'chip individual-char';
                     b.textContent = ch;
 
                     // 根據食物類型設定顏色
                     const foodType = getFoodType(ch);
                     const foodColor = getFoodColor(ch);
                     b.style.backgroundColor = foodColor.background;
-                    b.style.border = `3px solid ${foodColor.border}`;
+                    b.style.border = `2px solid ${foodColor.border}`;
                     b.style.color = foodColor.text;
                     b.style.textShadow = '0 1px 2px rgba(255, 255, 255, 0.8)';
                     b.style.fontWeight = 'bold';
+                    b.style.fontSize = '14px';
+                    
+                    // 添加漸進式顯示動畫
+                    b.style.animationDelay = `${i * 0.05}s`;
+                    b.style.animation = 'fadeInScale 0.4s ease-out forwards';
+                    b.style.opacity = '0';
+                    b.style.transform = 'scale(0.8)';
 
-                    listEl.appendChild(b);
-                }
-            });
+                    charsContainer.appendChild(b);
+                });
+                
+                individualContainer.appendChild(charsContainer);
+                listEl.appendChild(individualContainer);
+            }
         }
 
         // 顯示吃到的字的總數
