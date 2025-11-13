@@ -7,13 +7,13 @@ const GAME_CONFIG = {
     // 遊戲核心參數
     DEFAULT_SPEED: 8,
     GAME_DURATION: 60,
-    FOOD_CHANGE_INTERVAL: 5000,
+    FOOD_CHANGE_INTERVAL: 7500,              // 延長字符變換間隔，增加收集機會
     FRAME_RATE: 16,
 
-    // 聖誕字符系統配置
-    INITIAL_FOOD_COUNT: 6,
+    // 聖誕字符系統配置 - 優化任務完成機會
+    INITIAL_FOOD_COUNT: 8,                    // 增加同時出現的字符數量
     MAX_SPAWN_ATTEMPTS: 100,
-    CORE_CHRISTMAS_PROBABILITY: 0.3,
+    CORE_CHRISTMAS_PROBABILITY: 0.55,         // 提高核心聖誕字符出現概率
 
     // 響應式設計
     RESPONSIVE_TEXT_RATIO: 0.7,
@@ -46,6 +46,11 @@ let isPaused = false;
 let gameBackgroundTransparent = true; // 使用透明背景讓CSS控制
 let previousScreen = 'START';
 let difficulty = 'easy';
+
+// 連擊系統變數
+let comboCount = 0;
+let lastCharTime = 0;
+let comboTimeWindow = 3000; // 3秒內的連續收集算連擊
 
 // 伯利恆之星系統
 let bethlehemStar = {
@@ -249,8 +254,16 @@ function getFoodColor(char) {
     return color;
 }
 
-// 聖誕祝福字符選擇函數 - 增加核心信仰字符出現概率
+// 聖誕祝福字符選擇函數 - 智能化生成系統
 function getWeightedFood() {
+    // 智能字符生成：優先生成玩家需要的字符
+    const neededChars = getNeededCharacters();
+    
+    // 如果有需要的字符且隨機數滿足條件，優先生成需要的字符
+    if (neededChars.length > 0 && random() < 0.4) {
+        return random(neededChars);
+    }
+    
     // 定義核心信仰字符（更高出現機率）
     const coreChristmasChars = ['聖', '誕', '快', '樂', '主', '神', '愛', '信'];
 
@@ -261,6 +274,21 @@ function getWeightedFood() {
         // 從所有聖誕字符池中選擇
         return random(ITEMS.pool);
     }
+}
+
+// 獲取玩家當前需要的字符
+function getNeededCharacters() {
+    const progressData = analyzePhraseProgress();
+    const neededChars = new Set();
+    
+    // 收集所有進度中缺少的字符
+    progressData.forEach(data => {
+        if (data.progress >= 0.25) { // 只考慮已有進度的詞句
+            data.missingChars.forEach(char => neededChars.add(char));
+        }
+    });
+    
+    return Array.from(neededChars);
 }
 
 // 初始化系統
@@ -1018,30 +1046,152 @@ function resetGameState() {
     isPaused = false;
     completedPhrases = [];
     phraseHintShown = false;
+    
+    // 重置連擊系統
+    comboCount = 0;
+    lastCharTime = 0;
 }
 
-// 詞句檢測系統
+// 詞句檢測系統 - 彈性亂序檢測
 function checkForCompletedPhrases() {
     if (!window.ITEMS || !window.ITEMS.phrases) return [];
     
     const newCompletedPhrases = [];
-    const collectedString = collectedChars.join('');
+    const collectedCharCounts = {};
+    
+    // 統計收集到的每個字符數量
+    collectedChars.forEach(char => {
+        collectedCharCounts[char] = (collectedCharCounts[char] || 0) + 1;
+    });
     
     // 檢查所有可能的詞句
     Object.keys(ITEMS.phrases).forEach(phrase => {
-        // 如果還沒完成過這個詞句且收集的字符中包含這個詞句
-        if (!completedPhrases.includes(phrase) && collectedString.includes(phrase)) {
-            newCompletedPhrases.push(phrase);
-            completedPhrases.push(phrase);
+        // 如果還沒完成過這個詞句
+        if (!completedPhrases.includes(phrase)) {
+            const phraseChars = phrase.split('');
+            const requiredCounts = {};
             
-            // 應用詞句特殊效果
-            applyPhraseEffect(phrase);
+            // 統計詞句需要的每個字符數量
+            phraseChars.forEach(char => {
+                requiredCounts[char] = (requiredCounts[char] || 0) + 1;
+            });
             
-            console.log(`🎯 完成詞句：${phrase}`);
+            // 檢查是否收集了足夠的字符（不要求順序）
+            const canComplete = Object.keys(requiredCounts).every(char => {
+                return collectedCharCounts[char] >= requiredCounts[char];
+            });
+            
+            if (canComplete) {
+                newCompletedPhrases.push(phrase);
+                completedPhrases.push(phrase);
+                
+                // 應用詞句特殊效果
+                applyPhraseEffect(phrase);
+                
+                console.log(`🎯 完成詞句：${phrase} (彈性匹配)`);
+            }
         }
     });
     
     return newCompletedPhrases;
+}
+
+// 詞句進度分析系統
+function analyzePhraseProgress() {
+    if (!window.ITEMS || !window.ITEMS.phrases) return [];
+    
+    const collectedCharCounts = {};
+    const progressData = [];
+    
+    // 統計收集到的每個字符數量
+    collectedChars.forEach(char => {
+        collectedCharCounts[char] = (collectedCharCounts[char] || 0) + 1;
+    });
+    
+    // 分析每個詞句的進度
+    Object.keys(ITEMS.phrases).forEach(phrase => {
+        if (!completedPhrases.includes(phrase)) {
+            const phraseChars = phrase.split('');
+            const requiredCounts = {};
+            let collectedCount = 0;
+            let missingChars = [];
+            
+            // 統計詞句需要的每個字符數量
+            phraseChars.forEach(char => {
+                requiredCounts[char] = (requiredCounts[char] || 0) + 1;
+            });
+            
+            // 計算進度
+            Object.keys(requiredCounts).forEach(char => {
+                const collected = collectedCharCounts[char] || 0;
+                const required = requiredCounts[char];
+                
+                if (collected >= required) {
+                    collectedCount += required;
+                } else {
+                    collectedCount += collected;
+                    // 添加缺少的字符
+                    for (let i = 0; i < (required - collected); i++) {
+                        missingChars.push(char);
+                    }
+                }
+            });
+            
+            const progress = collectedCount / phraseChars.length;
+            
+            // 只顯示有進度的詞句（至少收集了25%）
+            if (progress >= 0.25) {
+                const phraseData = ITEMS.phrases[phrase];
+                progressData.push({
+                    phrase: phrase,
+                    progress: progress,
+                    collectedCount: collectedCount,
+                    totalCount: phraseChars.length,
+                    missingChars: missingChars,
+                    bonus: phraseData ? phraseData.bonus : 0
+                });
+            }
+        }
+    });
+    
+    // 按進度排序，進度高的在前
+    return progressData.sort((a, b) => b.progress - a.progress);
+}
+
+// 更新詞句進度顯示
+function updatePhraseProgressDisplay() {
+    const progressElement = document.getElementById('phrase-progress');
+    if (!progressElement) return;
+    
+    const progressData = analyzePhraseProgress();
+    
+    if (progressData.length === 0) {
+        progressElement.style.display = 'none';
+        return;
+    }
+    
+    progressElement.style.display = 'flex';
+    progressElement.innerHTML = '';
+    
+    // 只顯示前3個進度最高的詞句，避免HUD過於擁擠
+    progressData.slice(0, 3).forEach(data => {
+        const progressItem = document.createElement('div');
+        progressItem.className = 'progress-item';
+        
+        const progressPercentage = Math.round(data.progress * 100);
+        const missingText = data.missingChars.length > 0 ? 
+            `缺: ${[...new Set(data.missingChars)].join('')}` : '完成!';
+        
+        progressItem.innerHTML = `
+            <span style="font-weight: bold;">${data.phrase}</span>
+            <div class="progress-bar">
+                <div class="progress-fill" style="width: ${progressPercentage}%"></div>
+            </div>
+            <span class="missing-chars">${missingText}</span>
+        `;
+        
+        progressElement.appendChild(progressItem);
+    });
 }
 
 // 字符詞句分析函數 - 檢查每個字符屬於哪個完成的詞句
@@ -1288,6 +1438,9 @@ function draw() {
             // 使用 DOMManager 更新 HUD 元素
             DOMManager.setContent('time', timer);
             DOMManager.setContent('len', snake.length);
+            
+            // 更新詞句進度顯示
+            updatePhraseProgressDisplay();
 
             // 更新速度（結合難度與效果）
             const baseSpeed = speed * DIFFICULTY_SETTINGS[difficulty].speedMultiplier;
@@ -1311,14 +1464,38 @@ function draw() {
 
         // 繪製食物
         if (foods && foods.length > 0) {
+            const neededChars = getNeededCharacters();
+            
             foods.forEach(f => {
                 if (f && typeof f.x === 'number' && typeof f.y === 'number' && f.char) {
                     const foodColor = getFoodColor(f.char);
+                    const isNeeded = neededChars.includes(f.char);
+                    
+                    // 如果是需要的字符，添加特殊光效
+                    if (isNeeded) {
+                        // 繪製外層光暈
+                        push();
+                        const glowSize = 8 + 4 * sin(frameCount * 0.1);
+                        fill(255, 215, 0, 60 + 30 * sin(frameCount * 0.15));
+                        noStroke();
+                        ellipse(f.x * cell + cell / 2, f.y * cell + cell / 2, cell + glowSize);
+                        
+                        // 繪製內層光暈
+                        fill(255, 255, 255, 40 + 20 * sin(frameCount * 0.2));
+                        ellipse(f.x * cell + cell / 2, f.y * cell + cell / 2, cell + glowSize * 0.6);
+                        pop();
+                    }
 
                     // 繪製食物背景（帶顏色）
                     fill(foodColor.background);
                     stroke(foodColor.border);
-                    strokeWeight(2);
+                    strokeWeight(isNeeded ? 3 : 2);
+                    
+                    // 需要的字符使用特殊邊框顏色
+                    if (isNeeded) {
+                        stroke(255, 215, 0);
+                    }
+                    
                     rect(f.x * cell + 1, f.y * cell + 1, cell - 2, cell - 2, 4);
 
                     // 繪製食物文字
@@ -1327,7 +1504,13 @@ function draw() {
                     textAlign(CENTER, CENTER);
                     textSize(getResponsiveTextSize());
                     textFont(gameFont);
-                    text(f.char, f.x * cell + cell / 2, f.y * cell + cell / 2);
+                    
+                    // 需要的字符文字有輕微跳動效果
+                    const textY = isNeeded ? 
+                        f.y * cell + cell / 2 + sin(frameCount * 0.12) * 1.5 :
+                        f.y * cell + cell / 2;
+                    
+                    text(f.char, f.x * cell + cell / 2, textY);
                 }
             });
         }
@@ -1478,6 +1661,15 @@ function checkFoodCollision(position) {
 function handleFoodConsumption(food) {
     const char = food.char;
     const foodType = getFoodType(char);
+    const currentTime = millis();
+
+    // 連擊系統邏輯
+    if (currentTime - lastCharTime <= comboTimeWindow) {
+        comboCount++;
+    } else {
+        comboCount = 1; // 重置連擊
+    }
+    lastCharTime = currentTime;
 
     // 記錄收集到的食物
     collectedChars.push(char);
@@ -1491,6 +1683,13 @@ function handleFoodConsumption(food) {
 
     // 應用食物效果
     onEat(char);
+    
+    // 連擊獎勵：每5連擊獲得1秒時間獎勵
+    if (comboCount >= 5 && comboCount % 5 === 0) {
+        timer += 1;
+        createComboEffect(comboCount);
+        console.log(`🔥 ${comboCount}連擊！獲得時間獎勵！`);
+    }
 
     // 如果完成新詞句，顯示提示和特效
     if (newPhrases.length > 0) {
@@ -2648,4 +2847,63 @@ function createSimplePhraseEffect(phrase) {
             }
         }, 300);
     }, 2000);
+}
+
+// 連擊特效
+function createComboEffect(combo) {
+    const effectDiv = document.createElement('div');
+    effectDiv.style.cssText = `
+        position: fixed;
+        top: 25%;
+        left: 50%;
+        transform: translateX(-50%);
+        background: linear-gradient(45deg, #FF6B35, #F7931E);
+        color: white;
+        padding: 8px 16px;
+        border-radius: 12px;
+        font-size: 1.1em;
+        font-weight: bold;
+        text-align: center;
+        pointer-events: none;
+        z-index: 999;
+        animation: comboPopup 1.5s ease-out forwards;
+        box-shadow: 0 4px 15px rgba(255, 107, 53, 0.4);
+    `;
+    effectDiv.textContent = `🔥 ${combo}連擊！+1秒`;
+    
+    // 添加動畫樣式
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes comboPopup {
+            0% { 
+                opacity: 0; 
+                transform: translateX(-50%) translateY(-20px) scale(0.8); 
+            }
+            30% { 
+                opacity: 1; 
+                transform: translateX(-50%) translateY(0px) scale(1.1); 
+            }
+            70% { 
+                opacity: 1; 
+                transform: translateX(-50%) translateY(0px) scale(1); 
+            }
+            100% { 
+                opacity: 0; 
+                transform: translateX(-50%) translateY(-15px) scale(0.9); 
+            }
+        }
+    `;
+    document.head.appendChild(style);
+    
+    document.body.appendChild(effectDiv);
+    
+    // 1.5秒後移除效果
+    setTimeout(() => {
+        if (effectDiv.parentNode) {
+            effectDiv.parentNode.removeChild(effectDiv);
+        }
+        if (style.parentNode) {
+            style.parentNode.removeChild(style);
+        }
+    }, 1500);
 }

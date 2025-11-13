@@ -136,12 +136,71 @@
             right: 0;
             top: 0;
             display: flex;
-            gap: 12px;
-            justify-content: center;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
             padding: 6px 0;
             color: #FFD700; /* 金色 HUD 文字 */
             text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
-            mix-blend-mode: normal
+            mix-blend-mode: normal;
+            z-index: 100;
+        }
+        
+        /* 詞句進度顯示樣式 */
+        #phrase-progress {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            justify-content: center;
+            max-width: 90vw;
+            padding: 4px 8px;
+            background: rgba(15, 15, 35, 0.8);
+            border-radius: 8px;
+            font-size: 12px;
+        }
+        
+        .progress-item {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            padding: 2px 6px;
+            background: linear-gradient(45deg, 
+                rgba(255, 215, 0, 0.15) 0%, 
+                rgba(255, 255, 255, 0.1) 100%);
+            border-radius: 6px;
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            animation: progressGlow 2s ease-in-out infinite alternate;
+        }
+        
+        .progress-bar {
+            width: 30px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #FFD700, #FFA500);
+            border-radius: 2px;
+            transition: width 0.3s ease;
+        }
+        
+        .missing-chars {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 10px;
+        }
+        
+        @keyframes progressGlow {
+            0% { 
+                border-color: rgba(255, 215, 0, 0.3);
+                box-shadow: 0 0 5px rgba(255, 215, 0, 0.2);
+            }
+            100% { 
+                border-color: rgba(255, 215, 0, 0.6);
+                box-shadow: 0 0 10px rgba(255, 215, 0, 0.4);
+            }
         }
 
         #pad {
@@ -1308,8 +1367,29 @@
         @media (max-width: 480px) {
             #hud {
                 font-size: 16px;
-                gap: 8px;
-                padding: 6px 0;
+                gap: 6px;
+                padding: 4px 0;
+            }
+            
+            #phrase-progress {
+                font-size: 11px;
+                gap: 4px;
+                padding: 3px 6px;
+                max-width: 95vw;
+            }
+            
+            .progress-item {
+                padding: 1px 4px;
+                gap: 2px;
+            }
+            
+            .progress-bar {
+                width: 25px;
+                height: 3px;
+            }
+            
+            .missing-chars {
+                font-size: 9px;
             }
 
             #pad button {
@@ -1583,7 +1663,10 @@
 </head>
 
 <body>
-    <div id="hud"><span id="time">60</span>s｜長度 <span id="len">1</span>｜字體: <span id="font-info">檢測中...</span></div>
+    <div id="hud">
+        <span><span id="time">60</span>s｜長度 <span id="len">1</span>｜字體: <span id="font-info">檢測中...</span></span>
+        <div id="phrase-progress" style="display: none;"></div>
+    </div>
     <div id="pad">
         <button id="L">←</button><button id="U">↑</button>
         <button id="D">↓</button><button id="R">→</button>
