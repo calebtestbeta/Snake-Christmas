@@ -771,13 +771,7 @@ function drawChristmasLightBorder() {
     const canvasWidth = cols * cell;
     const canvasHeight = rows * cell;
     
-    // 測試繪製：在四個角落繪製明顯的測試圓形
-    fill(255, 0, 0, 255); // 純紅色，完全不透明
-    noStroke();
-    ellipse(50, 50, 30); // 左上角
-    ellipse(canvasWidth - 50, 50, 30); // 右上角
-    ellipse(50, canvasHeight - 50, 30); // 左下角
-    ellipse(canvasWidth - 50, canvasHeight - 50, 30); // 右下角
+    // 移除測試圓形，聖誕燈已經正常顯示
     
     // 聖誕燈顏色配置
     const christmasColors = [
@@ -791,10 +785,10 @@ function drawChristmasLightBorder() {
         [255, 255, 255]   // 白色
     ];
     
-    // 燈泡大小和間距設定 - 大幅增強版
-    const lightSize = cell * 1.2;  // 大幅增加燈泡大小使其更明顯
-    const spacing = cell * 1.5;    // 增加燈泡間距
-    const borderOffset = lightSize * 1.0; // 調整邊框偏移
+    // 燈泡大小和間距設定 - 調整為合適大小
+    const lightSize = cell * 0.4;  // 調整燈泡大小為適中尺寸
+    const spacing = cell * 0.8;    // 調整燈泡間距
+    const borderOffset = lightSize * 3.0; // 增加偏移讓燈泡在邊框外
     
     // 計算每邊的燈泡數量
     const topBottomLights = Math.floor(canvasWidth / spacing);
@@ -806,48 +800,48 @@ function drawChristmasLightBorder() {
     
     // 繪製邊框的四條邊
     
-    // 上邊 - 調整位置確保在畫布內可見
+    // 上邊 - 放在畫布上方邊框外
     for (let i = 0; i < topBottomLights; i++) {
         const x = (i + 0.5) * spacing;
-        const y = borderOffset / 4; // 改為正值，放在畫布頂部內側
+        const y = -borderOffset; // 放在畫布上方邊框外
         const colorIndex = i % christmasColors.length;
         const phase = time * blinkSpeed + (i * 0.3);
         drawChristmasLight(x, y, lightSize, christmasColors[colorIndex], phase);
     }
     
-    // 下邊 - 調整位置確保在畫布內可見
+    // 下邊 - 放在畫布下方邊框外
     for (let i = 0; i < topBottomLights; i++) {
         const x = (i + 0.5) * spacing;
-        const y = canvasHeight - borderOffset / 4; // 放在畫布底部內側
+        const y = canvasHeight + borderOffset; // 放在畫布下方邊框外
         const colorIndex = (i + 2) % christmasColors.length;
         const phase = time * blinkSpeed + (i * 0.3) + 1.5;
         drawChristmasLight(x, y, lightSize, christmasColors[colorIndex], phase);
     }
     
-    // 左邊 - 調整位置確保在畫布內可見
+    // 左邊 - 放在畫布左方邊框外
     for (let i = 0; i < leftRightLights; i++) {
-        const x = borderOffset / 4; // 放在畫布左側內側
+        const x = -borderOffset; // 放在畫布左方邊框外
         const y = (i + 0.5) * spacing;
         const colorIndex = (i + 4) % christmasColors.length;
         const phase = time * blinkSpeed + (i * 0.3) + 3.0;
         drawChristmasLight(x, y, lightSize, christmasColors[colorIndex], phase);
     }
     
-    // 右邊 - 調整位置確保在畫布內可見
+    // 右邊 - 放在畫布右方邊框外
     for (let i = 0; i < leftRightLights; i++) {
-        const x = canvasWidth - borderOffset / 4; // 放在畫布右側內側
+        const x = canvasWidth + borderOffset; // 放在畫布右方邊框外
         const y = (i + 0.5) * spacing;
         const colorIndex = (i + 6) % christmasColors.length;
         const phase = time * blinkSpeed + (i * 0.3) + 4.5;
         drawChristmasLight(x, y, lightSize, christmasColors[colorIndex], phase);
     }
     
-    // 繪製邊框線（連接燈泡的電線）- 增強版，改為畫布內側邊框
-    stroke(80, 80, 80, 180);
-    strokeWeight(3);
+    // 繪製邊框線（連接燈泡的電線）- 邊框外圈
+    stroke(80, 80, 80, 120);
+    strokeWeight(2);
     noFill();
-    rect(borderOffset / 8, borderOffset / 8, 
-         canvasWidth - borderOffset / 4, canvasHeight - borderOffset / 4);
+    rect(-borderOffset * 0.5, -borderOffset * 0.5, 
+         canvasWidth + borderOffset, canvasHeight + borderOffset);
 }
 
 // 繪製單個聖誕燈泡 - 增強版
