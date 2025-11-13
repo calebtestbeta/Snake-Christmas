@@ -10,18 +10,76 @@ This is a Chinese text-based Snake game called "文字貪食蛇｜聖誕祝福�
 
 ### Running the Game
 - **Local Development**: Open `index.html` directly in a browser or use a local HTTP server
-- **HTTP Server Options**:
-  ```bash
-  # Python (recommended)
-  python3 -m http.server 8000
-  
-  # Node.js
-  npx http-server
-  
-  # PHP
-  php -S localhost:8000
-  ```
-- **Access**: Navigate to `http://localhost:8000` when using a local server
+- **Access**: Navigate to `http://localhost:[PORT]` when using a local server
+
+### Web Server Management (重要！)
+
+#### Smart Server Startup Protocol
+為了避免 "Address already in use" 錯誤和端口衝突，建議使用以下流程：
+
+```bash
+# 1. 檢查現有 server 進程
+ps aux | grep "python.*http.server" | grep -v grep
+
+# 2. 清理現有 servers (推薦在啟動新 server 前執行)
+pkill -f "python.*http.server" 2>/dev/null || true
+
+# 3. 智能端口檢測和啟動
+for port in 8000 8001 8002 8003; do
+    if ! lsof -ti:$port > /dev/null 2>&1; then
+        echo "🚀 Starting server on port $port"
+        python3 -m http.server $port --directory .
+        break
+    fi
+done
+```
+
+#### HTTP Server Options
+```bash
+# Python (推薦 - 內建支援)
+python3 -m http.server 8000
+
+# Node.js (需要全域安裝)
+npx http-server -p 8001
+
+# PHP (適用於 PHP 開發者)
+php -S localhost:8002
+```
+
+#### Quick Management Commands
+```bash
+# 快速清理所有 HTTP servers
+alias kill-servers="pkill -f 'python.*http.server'"
+
+# 檢查端口使用情況
+alias check-ports="lsof -i :8000,8001,8002,8003"
+
+# 智能啟動 (自動找可用端口)
+alias start-server="for port in 8000 8001 8002 8003; do if ! lsof -ti:\$port >/dev/null 2>&1; then python3 -m http.server \$port; break; fi; done"
+```
+
+#### Automated Server Management Script
+
+專案包含 `dev-server.sh` 自動化腳本，提供完整的服務器管理功能：
+
+```bash
+# 賦予執行權限 (首次使用)
+chmod +x dev-server.sh
+
+# 基本用法
+./dev-server.sh           # 智能啟動服務器
+./dev-server.sh cleanup   # 清理所有服務器  
+./dev-server.sh restart   # 清理並重新啟動
+./dev-server.sh check     # 檢查服務器狀態
+./dev-server.sh help      # 顯示幫助信息
+```
+
+**腳本功能特色**:
+- 🔍 自動檢測現有服務器進程
+- 🧹 一鍵清理所有衝突的服務器
+- 🚀 智能端口選擇 (8000→8001→8002→8003)
+- 💡 用戶友善的狀態提示和建議
+- 🎨 彩色輸出增強可讀性
 
 ### Testing
 - No automated test framework - testing is done manually through browser gameplay
@@ -296,6 +354,82 @@ const canComplete = Object.keys(requiredCounts).every(char => {
 - **Player Engagement**: Real-time progress feedback maintains motivation
 - **Accessibility**: Flexible order matching accommodates different play styles
 - **Strategic Depth**: Combo system adds skill-based time management layer
+
+### Claude Code Development Protocol
+
+#### Web Server Management Best Practices
+
+**For Claude Code Assistants**: 以下指導原則有助於提供更順暢的開發體驗
+
+##### Server Lifecycle Management
+1. **啟動前檢查**
+   ```bash
+   # 總是先檢查現有進程
+   ps aux | grep "python.*http.server" | grep -v grep
+   ```
+
+2. **智能衝突處理**
+   ```bash
+   # 提供清理選項而非強制覆蓋
+   if lsof -ti:8000 >/dev/null 2>&1; then
+       echo "⚠️  Port 8000 is already in use"
+       echo "🔧 Run: pkill -f 'python.*http.server' to clean up"
+   fi
+   ```
+
+3. **用戶友善提示**
+   - 明確告知端口使用情況
+   - 提供具體的清理命令
+   - 建議使用智能端口檢測腳本
+
+##### Development Workflow Enhancement
+- **端口策略**: 優先順序 8000 > 8001 > 8002 > 8003
+- **清理策略**: 用戶請求時提供快速清理指令
+- **進程追蹤**: 記住啟動的 server 以便後續管理
+- **自動化建議**: 推薦使用智能啟動腳本避免手動管理
+
+## Common Issues & Solutions
+
+### Port Conflicts ("Address already in use")
+
+**Problem**: Multiple HTTP servers running on same port causing conflicts
+
+**Solutions**:
+```bash
+# Method 1: Kill specific port process
+lsof -ti:8000 | xargs kill -9
+
+# Method 2: Kill all Python HTTP servers  
+pkill -f "python.*http.server"
+
+# Method 3: Use smart port detection
+for port in 8000 8001 8002 8003; do
+    if ! lsof -ti:$port >/dev/null 2>&1; then
+        python3 -m http.server $port
+        break
+    fi
+done
+```
+
+**Prevention**: Always check existing processes before starting new servers
+
+### Multiple Server Management
+
+**Problem**: Forgetting about background servers leading to resource waste
+
+**Solution**: Implement systematic server management
+```bash
+# Create a server management script
+#!/bin/bash
+echo "🔍 Checking existing servers..."
+ps aux | grep "python.*http.server" | grep -v grep
+
+echo "🧹 Cleaning up existing servers..."
+pkill -f "python.*http.server" 2>/dev/null || true
+
+echo "🚀 Starting fresh server..."
+python3 -m http.server 8000
+```
 
 ### Configuration Requirements
 - **Language**: 繁體中文 (Traditional Chinese) with Taiwan-specific terminology
