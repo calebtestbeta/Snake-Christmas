@@ -813,13 +813,17 @@ function drawChristmasLightBorder() {
         const colorOffset = Math.floor(time * colorCycleSpeed + i * 0.5) % christmasColors.length;
         const dynamicColorIndex = (baseColorIndex + colorOffset) % christmasColors.length;
         
+        // 安全檢查：確保顏色索引有效
+        const safeColorIndex = Math.max(0, Math.min(dynamicColorIndex, christmasColors.length - 1));
+        const currentColor = christmasColors[safeColorIndex] || [255, 85, 85]; // 預設紅色
+        
         // 交替閃爍效果：奇偶燈泡使用不同的相位
         const alternatePhase = (i % 2) * PI; // 奇偶燈泡相位差180度
         const wavePhase = (i / topBottomLights) * TWO_PI * waveSpeed; // 波浪傳播效果
         const phase = time * baseBlinkSpeed + alternatePhase + wavePhase;
         
         // 使用完整的聖誕燈效果
-        drawChristmasLight(x, y, lightSize, christmasColors[dynamicColorIndex], phase);
+        drawChristmasLight(x, y, lightSize, currentColor, phase);
     }
     
     // 下邊 - 放在畫布內側下邊緣
@@ -833,13 +837,17 @@ function drawChristmasLightBorder() {
         const colorOffset = Math.floor(time * colorCycleSpeed + i * 0.7 + 3) % christmasColors.length;
         const dynamicColorIndex = (baseColorIndex + colorOffset) % christmasColors.length;
         
+        // 安全檢查：確保顏色索引有效
+        const safeColorIndex = Math.max(0, Math.min(dynamicColorIndex, christmasColors.length - 1));
+        const currentColor = christmasColors[safeColorIndex] || [85, 255, 85]; // 預設綠色
+        
         // 下邊燈泡與上邊相反的交替閃爍
         const alternatePhase = ((i + 1) % 2) * PI; // 與上邊相反的奇偶模式
         const wavePhase = (i / topBottomLights) * TWO_PI * waveSpeed + PI; // 反向波浪
         const phase = time * baseBlinkSpeed + alternatePhase + wavePhase + 1.5;
         
         // 使用完整的聖誕燈效果
-        drawChristmasLight(x, y, lightSize, christmasColors[dynamicColorIndex], phase);
+        drawChristmasLight(x, y, lightSize, currentColor, phase);
     }
     
     // 左邊 - 放在畫布內側左邊緣
@@ -853,13 +861,17 @@ function drawChristmasLightBorder() {
         const colorOffset = Math.floor(time * colorCycleSpeed + i * 0.3 + 5) % christmasColors.length;
         const dynamicColorIndex = (baseColorIndex + colorOffset) % christmasColors.length;
         
+        // 安全檢查：確保顏色索引有效
+        const safeColorIndex = Math.max(0, Math.min(dynamicColorIndex, christmasColors.length - 1));
+        const currentColor = christmasColors[safeColorIndex] || [85, 85, 255]; // 預設藍色
+        
         // 左邊燈泡垂直方向的交替閃爍
         const alternatePhase = (i % 3) * (TWO_PI / 3); // 三分相位，更豐富的變化
         const wavePhase = (i / leftRightLights) * TWO_PI * waveSpeed * 1.2; // 稍快的波浪
         const phase = time * baseBlinkSpeed + alternatePhase + wavePhase + 3.0;
         
         // 使用完整的聖誕燈效果
-        drawChristmasLight(x, y, lightSize, christmasColors[dynamicColorIndex], phase);
+        drawChristmasLight(x, y, lightSize, currentColor, phase);
     }
     
     // 右邊 - 放在畫布內側右邊緣
@@ -873,13 +885,17 @@ function drawChristmasLightBorder() {
         const colorOffset = Math.floor(time * colorCycleSpeed - i * 0.4 + 7) % christmasColors.length;
         const dynamicColorIndex = (baseColorIndex + colorOffset) % christmasColors.length;
         
+        // 安全檢查：確保顏色索引有效
+        const safeColorIndex = Math.max(0, Math.min(dynamicColorIndex, christmasColors.length - 1));
+        const currentColor = christmasColors[safeColorIndex] || [255, 255, 85]; // 預設黃色
+        
         // 右邊燈泡與左邊相反的交替閃爍
         const alternatePhase = ((i + 2) % 3) * (TWO_PI / 3); // 與左邊錯開的三分相位
         const wavePhase = (i / leftRightLights) * TWO_PI * waveSpeed * -1.2 + PI; // 反向快速波浪
         const phase = time * baseBlinkSpeed + alternatePhase + wavePhase + 4.5;
         
         // 使用完整的聖誕燈效果
-        drawChristmasLight(x, y, lightSize, christmasColors[dynamicColorIndex], phase);
+        drawChristmasLight(x, y, lightSize, currentColor, phase);
     }
     
     // 繪製邊框線（連接燈泡的電線）- 邊框外圈
