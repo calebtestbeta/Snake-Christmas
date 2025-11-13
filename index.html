@@ -214,6 +214,9 @@
             gap: 4px;
             width: 180px;
             height: 180px;
+            /* 確保按鈕在 Canvas 之上且可接收事件 */
+            z-index: 1000;
+            pointer-events: auto;
         }
 
         #pad button {
@@ -230,9 +233,11 @@
             -webkit-tap-highlight-color: transparent;
             user-select: none;
             
-            /* 確保按鈕可點擊 */
-            pointer-events: auto;
+            /* 確保按鈕可點擊 - 強化事件接收 */
+            pointer-events: auto !important;
             cursor: pointer;
+            position: relative;
+            z-index: 1001;
             
             transition: all 0.3s ease;
             box-shadow: 
@@ -339,6 +344,9 @@
             display: block;
             max-width: 100%;
             height: auto;
+            /* Canvas 需要接收事件但不能攔截按鈕 */
+            position: relative;
+            z-index: 1;
         }
         
         /* 遊戲畫布特定樣式 - 為增強聖誕燈預留更多空間 */

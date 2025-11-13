@@ -424,6 +424,108 @@ function setupControls() {
     setupKeyboardControls();
     setupGameButtons();
     setupDifficultySelector();
+    // 設置 Canvas 事件過濾器防止攔截按鈕事件
+    setupCanvasEventFilter();
+    // 設置全域觸控事件委託作為備用方案
+    setupGlobalTouchDelegate();
+}
+
+// 智能觸控事件管理器
+function setupCanvasEventFilter() {
+    const canvas = document.querySelector('canvas:not(#nutritionChart)');
+    if (!canvas) return;
+
+    // 獲取按鈕區域信息
+    function getButtonAreas() {
+        const pad = document.getElementById('pad');
+        if (!pad) return [];
+        
+        const padRect = pad.getBoundingClientRect();
+        const buttonIds = ['L', 'R', 'U', 'D'];
+        
+        return buttonIds.map(id => {
+            const button = document.getElementById(id);
+            if (!button) return null;
+            
+            const rect = button.getBoundingClientRect();
+            return {
+                id,
+                left: rect.left,
+                top: rect.top,
+                right: rect.right,
+                bottom: rect.bottom,
+                centerX: rect.left + rect.width / 2,
+                centerY: rect.top + rect.height / 2,
+                radius: Math.max(rect.width, rect.height) / 2 + 10 // 增加10px緩衝區
+            };
+        }).filter(Boolean);
+    }
+
+    // 檢查觸控點是否在按鈕區域內
+    function isTouchInButtonArea(x, y) {
+        const buttonAreas = getButtonAreas();
+        return buttonAreas.some(area => {
+            const distance = Math.sqrt(
+                Math.pow(x - area.centerX, 2) + Math.pow(y - area.centerY, 2)
+            );
+            return distance <= area.radius;
+        });
+    }
+
+    // 攔截 Canvas 上可能影響按鈕的觸控事件
+    canvas.addEventListener('touchstart', (e) => {
+        if (e.touches.length > 0) {
+            const touch = e.touches[0];
+            if (isTouchInButtonArea(touch.clientX, touch.clientY)) {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('⚠️ Canvas 觸控事件被攔截，保護按鈕區域');
+            }
+        }
+    }, { passive: false });
+
+    console.log('✅ Canvas 事件過濾器已啟用');
+}
+
+// 全域觸控事件委託系統（備用方案）
+function setupGlobalTouchDelegate() {
+    document.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 0) return;
+        
+        const touch = e.touches[0];
+        const target = document.elementFromPoint(touch.clientX, touch.clientY);
+        
+        // 檢查是否觸控到虛擬按鈕
+        if (target && target.closest('#pad')) {
+            const button = target.closest('button');
+            if (button && button.id) {
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                
+                const directionMap = {
+                    'L': 'LEFT',
+                    'R': 'RIGHT', 
+                    'U': 'UP',
+                    'D': 'DOWN'
+                };
+                
+                const direction = directionMap[button.id];
+                if (direction) {
+                    changeDirection(direction);
+                    
+                    // 視覺反饋
+                    button.classList.add('touched');
+                    setTimeout(() => {
+                        button.classList.remove('touched');
+                    }, 150);
+                    
+                    console.log(`🎯 全域委託觸發方向: ${direction}`);
+                }
+            }
+        }
+    }, { passive: false, capture: true });
+    
+    console.log('✅ 全域觸控事件委託已啟用');
 }
 
 function setupVirtualButtons() {
@@ -446,12 +548,19 @@ function setupVirtualButtons() {
             };
 
             // 添加多種事件類型以確保跨設備兼容性
-            button.addEventListener('click', handleDirection, { passive: false });
+            // 使用 capture 模式確保按鈕事件優先處理
+            button.addEventListener('click', handleDirection, { passive: false, capture: true });
             button.addEventListener('touchstart', (e) => {
+                // 強制停止事件冒泡，防止被 Canvas 攔截
+                e.stopImmediatePropagation();
+                e.preventDefault();
+                
                 // 添加視覺反饋
                 button.classList.add('touched');
                 handleDirection(e);
-            }, { passive: false });
+                
+                console.log(`🎯 按鈕 ${id} touchstart 事件成功觸發`);
+            }, { passive: false, capture: true });
             
             button.addEventListener('touchend', (e) => {
                 e.preventDefault();
@@ -2556,16 +2665,37 @@ function debugVirtualButtons() {
     console.log('=== 虛擬按鈕調試信息 ===');
     const buttonIds = ['L', 'R', 'U', 'D'];
     
+    // 檢查 Canvas 狀態
+    const canvas = document.querySelector('canvas:not(#nutritionChart)');
+    console.log('Canvas 狀態:', {
+        found: !!canvas,
+        pointerEvents: canvas ? getComputedStyle(canvas).pointerEvents : 'N/A',
+        zIndex: canvas ? getComputedStyle(canvas).zIndex : 'N/A'
+    });
+    
+    // 檢查 Pad 容器
+    const pad = document.getElementById('pad');
+    console.log('Pad 容器:', {
+        found: !!pad,
+        zIndex: pad ? getComputedStyle(pad).zIndex : 'N/A',
+        pointerEvents: pad ? getComputedStyle(pad).pointerEvents : 'N/A'
+    });
+    
     buttonIds.forEach(id => {
         const button = document.getElementById(id);
         if (button) {
             const rect = button.getBoundingClientRect();
+            const style = getComputedStyle(button);
             console.log(`按鈕 ${id}:`, {
                 found: true,
                 visible: button.offsetWidth > 0 && button.offsetHeight > 0,
                 position: { x: rect.left, y: rect.top },
                 size: { width: rect.width, height: rect.height },
-                style: getComputedStyle(button).pointerEvents,
+                style: {
+                    pointerEvents: style.pointerEvents,
+                    zIndex: style.zIndex,
+                    position: style.position
+                },
                 eventListeners: getEventListeners ? getEventListeners(button) : '需在開發者工具中查看'
             });
             
@@ -2580,6 +2710,7 @@ function debugVirtualButtons() {
     console.log('當前遊戲狀態:', gameState);
     console.log('是否暫停:', isPaused);
     console.log('當前方向:', dir);
+    console.log('事件過濾器狀態: Canvas事件過濾器和全域委託已啟用');
     console.log('=== 調試信息結束 ===');
 }
 
