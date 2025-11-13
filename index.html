@@ -475,20 +475,23 @@
         }
 
         #report {
-            margin: 20px 0 30px 0;
+            margin: 20px 0 25px 0;
             color: #333;
-            font-size: 1.1em;
-            line-height: 1.5;
-            padding: 15px;
-            background: #f0f8f0;
-            border-radius: 10px;
-            border-left: 4px solid #FFD700;
+            font-size: 1.15em;
+            line-height: 1.6;
+            padding: 18px 20px;
+            background: linear-gradient(135deg, #f0f8f0 0%, #f8fff8 100%);
+            border-radius: 12px;
+            border-left: 5px solid #FFD700;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            text-align: left;
+            white-space: pre-line;
         }
 
         /* 聖誕主題按鈕樣式 */
         #card button {
-            font-size: 1.3em;
-            padding: 15px 30px;
+            font-size: 1.1em;
+            padding: 12px 20px;
             border-radius: 25px;
             border: 2px solid rgba(255, 215, 0, 0.3);
             background: linear-gradient(45deg, #B8860B, #DAA520, #FFD700);
@@ -504,6 +507,9 @@
             overflow: hidden;
             text-transform: uppercase;
             letter-spacing: 1px;
+            flex: 1;
+            min-width: 160px;
+            max-width: 200px;
         }
 
         #card button::before {
@@ -549,12 +555,12 @@
             60% { transform: translateY(-2px); }
         }
 
-        /* 營養圓餅圖樣式 */
+        /* 營養圓餅圖樣式 - 縮小以騰出空間 */
         #nutritionChart {
-            max-width: 280px;
-            max-height: 280px;
+            max-width: 240px;
+            max-height: 240px;
             width: 100%;
-            margin: 20px auto;
+            margin: 15px auto 20px auto;
             background: transparent;
         }
 
@@ -691,18 +697,28 @@
         }
 
         /* 按鈕容器樣式 */
-        #start-buttons,
-        #end-buttons {
+        #start-buttons {
             display: flex;
             flex-direction: column;
             gap: 12px;
             align-items: center;
         }
 
+        /* 結束頁面按鈕容器 - 改為並排 */
+        #end-buttons {
+            display: flex;
+            flex-direction: row;
+            gap: 12px;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+
         /* 次要按鈕樣式 - 聖誕銀色主題 */
         .secondary-button {
-            font-size: 1.1em;
-            padding: 12px 25px;
+            font-size: 1.0em;
+            padding: 12px 20px;
             border-radius: 25px;
             border: 2px solid rgba(192, 192, 192, 0.6);
             background: linear-gradient(45deg, transparent, rgba(192, 192, 192, 0.1));
@@ -713,6 +729,9 @@
             font-family: inherit;
             position: relative;
             overflow: hidden;
+            flex: 1;
+            min-width: 160px;
+            max-width: 200px;
         }
 
         .secondary-button::before {
@@ -1296,15 +1315,16 @@
             }
 
             #card button {
-                font-size: 1.2em;
-                padding: 12px 25px;
+                font-size: 1.0em;
+                padding: 10px 16px;
+                min-width: 140px;
             }
             
             /* 手機版圓餅圖優化 */
             #nutritionChart {
-                max-width: 240px;
-                max-height: 240px;
-                margin: 15px auto;
+                max-width: 200px;
+                max-height: 200px;
+                margin: 12px auto 15px auto;
             }
 
             /* 手機版起始視窗 */
@@ -1401,9 +1421,15 @@
             }
 
             /* 手機版按鈕容器 */
-            #start-buttons,
-            #end-buttons {
+            #start-buttons {
                 gap: 10px;
+            }
+            
+            /* 手機版結束按鈕容器 - 保持並排但縮小間距 */
+            #end-buttons {
+                gap: 8px;
+                margin-top: 15px;
+                flex-wrap: wrap;
             }
 
             .secondary-button {
