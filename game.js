@@ -1206,6 +1206,7 @@ function draw() {
         if (frameCount <= 10) {
             console.log('Frame', frameCount, '聖誕夜空背景：由 CSS 控制');
             console.log('Canvas 尺寸:', cols * cell, 'x', rows * cell, ', cell:', cell);
+            console.log('遊戲狀態:', gameState);
         }
         
         // 只有在遊戲進行中且未暫停才執行遊戲邏輯
