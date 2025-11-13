@@ -388,6 +388,51 @@ const canComplete = Object.keys(requiredCounts).every(char => {
 - **進程追蹤**: 記住啟動的 server 以便後續管理
 - **自動化建議**: 推薦使用智能啟動腳本避免手動管理
 
+## Mobile Development & Testing
+
+### iOS Safari Touch Controls (v1.1.1 - 2024-11-13)
+
+#### Problem Diagnosis
+- **Issue**: iPhone 虛擬按鈕 (L/R/U/D) 無觸控反應
+- **Root Cause**: p5.js `mousePressed()` 在 iOS Safari 兼容性不佳
+- **Impact**: 遊戲核心控制功能失效，嚴重影響移動端用戶體驗
+
+#### Solution Implementation
+1. **事件系統重構** (`game.js:429-487`):
+   ```javascript
+   // 替換 p5.js mousePressed 為原生事件
+   button.addEventListener('touchstart', handleDirection, { passive: false });
+   button.addEventListener('click', handleDirection, { passive: false });
+   ```
+
+2. **iOS 專用優化** (`index.html:226-299`):
+   ```css
+   #pad button {
+       touch-action: manipulation;
+       -webkit-touch-callout: none;
+       -webkit-tap-highlight-color: transparent;
+       min-width: 44px; /* iOS HIG 標準 */
+   }
+   ```
+
+3. **調試工具**:
+   ```javascript
+   // 開發者工具中使用
+   window.debugVirtualButtons(); // 檢測按鈕狀態和事件
+   ```
+
+#### Testing Protocol
+1. 部署到本地服務器 (`http://localhost:8000`)
+2. 在 iPhone Safari 中測試四方向按鈕
+3. 檢查控制台是否有觸控事件日誌
+4. 驗證按鈕視覺反饋 (`.touched` 類別)
+
+#### Key Learnings
+- iOS Safari 對 p5.js 事件支持有限
+- 必須使用 `{ passive: false }` 確保 `preventDefault()` 生效
+- 44px 最小觸控區域是 iOS 可用性標準
+- 原生 JavaScript 事件比第三方庫更可靠
+
 ## Common Issues & Solutions
 
 ### Port Conflicts ("Address already in use")

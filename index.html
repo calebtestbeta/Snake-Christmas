@@ -222,8 +222,18 @@
             border: 2px solid rgba(255, 215, 0, 0.3);
             background: linear-gradient(45deg, #013, #025);
             color: #FFD700;
+            
+            /* iOS 觸控優化 */
             touch-action: manipulation;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            -webkit-tap-highlight-color: transparent;
             user-select: none;
+            
+            /* 確保按鈕可點擊 */
+            pointer-events: auto;
+            cursor: pointer;
+            
             transition: all 0.3s ease;
             box-shadow: 
                 0 2px 8px rgba(0, 0, 0, 0.2),
@@ -234,6 +244,10 @@
             font-weight: bold;
             position: relative;
             overflow: hidden;
+            
+            /* 增加觸控區域 - iOS 建議至少 44px */
+            min-width: 44px;
+            min-height: 44px;
         }
 
         #pad button::before {
@@ -265,6 +279,23 @@
             box-shadow: 
                 0 1px 4px rgba(0, 0, 0, 0.3),
                 inset 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        /* iOS Safari 專用觸控樣式 */
+        @supports (-webkit-touch-callout: none) {
+            #pad button {
+                /* 確保在 iOS 上有足夠的觸控區域 */
+                padding: 8px;
+            }
+            
+            #pad button:active,
+            #pad button.touched {
+                background: linear-gradient(45deg, #037, #048);
+                border-color: rgba(255, 215, 0, 0.8);
+                box-shadow: 
+                    0 2px 8px rgba(255, 215, 0, 0.4),
+                    inset 0 2px 4px rgba(0, 0, 0, 0.3);
+            }
         }
 
         /* 十字排列：上方按鈕 */

@@ -428,16 +428,51 @@ function setupControls() {
 
 function setupVirtualButtons() {
     const buttonMappings = [
-        { id: '#L', direction: 'LEFT' },
-        { id: '#R', direction: 'RIGHT' },
-        { id: '#U', direction: 'UP' },
-        { id: '#D', direction: 'DOWN' }
+        { id: 'L', direction: 'LEFT' },
+        { id: 'R', direction: 'RIGHT' },
+        { id: 'U', direction: 'UP' },
+        { id: 'D', direction: 'DOWN' }
     ];
 
     buttonMappings.forEach(({ id, direction }) => {
-        const button = select(id);
+        const button = document.getElementById(id);
         if (button) {
-            button.mousePressed(() => changeDirection(direction));
+            // 使用原生 JavaScript 事件以提供更好的跨平台支持
+            const handleDirection = (e) => {
+                e.preventDefault(); // 防止預設行為（如滾動）
+                e.stopPropagation(); // 防止事件冒泡
+                changeDirection(direction);
+                console.log(`方向鍵觸發: ${direction}`); // 調試用
+            };
+
+            // 添加多種事件類型以確保跨設備兼容性
+            button.addEventListener('click', handleDirection, { passive: false });
+            button.addEventListener('touchstart', (e) => {
+                // 添加視覺反饋
+                button.classList.add('touched');
+                handleDirection(e);
+            }, { passive: false });
+            
+            button.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                // 移除視覺反饋
+                setTimeout(() => {
+                    button.classList.remove('touched');
+                }, 150);
+            }, { passive: false });
+            
+            // 防止 iOS 上的雙擊縮放和意外滾動
+            button.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+            }, { passive: false });
+
+            // 防止 iOS 上的長按選單
+            button.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+            });
+
+            console.log(`✅ 按鈕 ${id} 事件已綁定`);
         } else {
             console.warn(`找不到按鈕元素: ${id}`);
         }
@@ -2515,6 +2550,41 @@ function setupDifficultySelector() {
 
     console.log('難度選擇器初始化完成，預設難度：簡單');
 }
+
+// 調試函數：驗證按鈕功能（開發者工具使用）
+function debugVirtualButtons() {
+    console.log('=== 虛擬按鈕調試信息 ===');
+    const buttonIds = ['L', 'R', 'U', 'D'];
+    
+    buttonIds.forEach(id => {
+        const button = document.getElementById(id);
+        if (button) {
+            const rect = button.getBoundingClientRect();
+            console.log(`按鈕 ${id}:`, {
+                found: true,
+                visible: button.offsetWidth > 0 && button.offsetHeight > 0,
+                position: { x: rect.left, y: rect.top },
+                size: { width: rect.width, height: rect.height },
+                style: getComputedStyle(button).pointerEvents,
+                eventListeners: getEventListeners ? getEventListeners(button) : '需在開發者工具中查看'
+            });
+            
+            // 測試點擊功能
+            console.log(`🧪 測試按鈕 ${id} 點擊功能...`);
+            button.click();
+        } else {
+            console.log(`❌ 按鈕 ${id}: 未找到元素`);
+        }
+    });
+    
+    console.log('當前遊戲狀態:', gameState);
+    console.log('是否暫停:', isPaused);
+    console.log('當前方向:', dir);
+    console.log('=== 調試信息結束 ===');
+}
+
+// 暴露到全域供調試使用
+window.debugVirtualButtons = debugVirtualButtons;
 
 // 移除舊的背景顏色設定函數 - 現在由 CSS 聖誕夜空漸層控制
 
