@@ -771,7 +771,13 @@ function drawChristmasLightBorder() {
     const canvasWidth = cols * cell;
     const canvasHeight = rows * cell;
     
-    console.log('繪製聖誕燈 - Canvas尺寸:', canvasWidth, 'x', canvasHeight, 'Cell:', cell);
+    // 測試繪製：在四個角落繪製明顯的測試圓形
+    fill(255, 0, 0, 255); // 純紅色，完全不透明
+    noStroke();
+    ellipse(50, 50, 30); // 左上角
+    ellipse(canvasWidth - 50, 50, 30); // 右上角
+    ellipse(50, canvasHeight - 50, 30); // 左下角
+    ellipse(canvasWidth - 50, canvasHeight - 50, 30); // 右下角
     
     // 聖誕燈顏色配置
     const christmasColors = [
@@ -785,10 +791,10 @@ function drawChristmasLightBorder() {
         [255, 255, 255]   // 白色
     ];
     
-    // 燈泡大小和間距設定 - 增強版
-    const lightSize = cell * 0.6;  // 增加燈泡大小
-    const spacing = cell * 0.9;    // 調整燈泡間距
-    const borderOffset = lightSize * 2.0; // 大幅增加邊框偏移避免被遮擋
+    // 燈泡大小和間距設定 - 大幅增強版
+    const lightSize = cell * 1.2;  // 大幅增加燈泡大小使其更明顯
+    const spacing = cell * 1.5;    // 增加燈泡間距
+    const borderOffset = lightSize * 1.0; // 調整邊框偏移
     
     // 計算每邊的燈泡數量
     const topBottomLights = Math.floor(canvasWidth / spacing);
@@ -800,64 +806,59 @@ function drawChristmasLightBorder() {
     
     // 繪製邊框的四條邊
     
-    console.log('繪製聖誕燈數量 - 上下:', topBottomLights, '左右:', leftRightLights, '燈泡大小:', lightSize);
-    
-    // 上邊
+    // 上邊 - 調整位置確保在畫布內可見
     for (let i = 0; i < topBottomLights; i++) {
         const x = (i + 0.5) * spacing;
-        const y = -borderOffset;
+        const y = borderOffset / 4; // 改為正值，放在畫布頂部內側
         const colorIndex = i % christmasColors.length;
-        const phase = time * blinkSpeed + (i * 0.3); // 每個燈有不同相位
-        if (i === 0) {
-            console.log('第一個上邊燈泡位置:', x, y, '顏色:', christmasColors[colorIndex]);
-        }
+        const phase = time * blinkSpeed + (i * 0.3);
         drawChristmasLight(x, y, lightSize, christmasColors[colorIndex], phase);
     }
     
-    // 下邊
+    // 下邊 - 調整位置確保在畫布內可見
     for (let i = 0; i < topBottomLights; i++) {
         const x = (i + 0.5) * spacing;
-        const y = canvasHeight + borderOffset;
-        const colorIndex = (i + 2) % christmasColors.length; // 偏移顏色
+        const y = canvasHeight - borderOffset / 4; // 放在畫布底部內側
+        const colorIndex = (i + 2) % christmasColors.length;
         const phase = time * blinkSpeed + (i * 0.3) + 1.5;
         drawChristmasLight(x, y, lightSize, christmasColors[colorIndex], phase);
     }
     
-    // 左邊
+    // 左邊 - 調整位置確保在畫布內可見
     for (let i = 0; i < leftRightLights; i++) {
-        const x = -borderOffset;
+        const x = borderOffset / 4; // 放在畫布左側內側
         const y = (i + 0.5) * spacing;
         const colorIndex = (i + 4) % christmasColors.length;
         const phase = time * blinkSpeed + (i * 0.3) + 3.0;
         drawChristmasLight(x, y, lightSize, christmasColors[colorIndex], phase);
     }
     
-    // 右邊
+    // 右邊 - 調整位置確保在畫布內可見
     for (let i = 0; i < leftRightLights; i++) {
-        const x = canvasWidth + borderOffset;
+        const x = canvasWidth - borderOffset / 4; // 放在畫布右側內側
         const y = (i + 0.5) * spacing;
         const colorIndex = (i + 6) % christmasColors.length;
         const phase = time * blinkSpeed + (i * 0.3) + 4.5;
         drawChristmasLight(x, y, lightSize, christmasColors[colorIndex], phase);
     }
     
-    // 繪製邊框線（連接燈泡的電線）- 增強版
-    stroke(80, 80, 80, 180); // 稍微亮一點的電線，半透明
+    // 繪製邊框線（連接燈泡的電線）- 增強版，改為畫布內側邊框
+    stroke(80, 80, 80, 180);
     strokeWeight(3);
     noFill();
-    rect(-borderOffset * 0.8, -borderOffset * 0.8, 
-         canvasWidth + borderOffset * 1.6, canvasHeight + borderOffset * 1.6);
+    rect(borderOffset / 8, borderOffset / 8, 
+         canvasWidth - borderOffset / 4, canvasHeight - borderOffset / 4);
 }
 
 // 繪製單個聖誕燈泡 - 增強版
 function drawChristmasLight(x, y, size, baseColor, phase) {
     push();
     
-    // 計算增強的亮度（呼吸效果）
-    const brightness = 0.3 + 0.7 * (0.5 + 0.5 * sin(phase));
+    // 計算增強的亮度（呼吸效果）- 更明顯的亮度變化
+    const brightness = 0.6 + 0.4 * (0.5 + 0.5 * sin(phase));
     
-    // 外層光暈（總是顯示）
-    const outerGlowAlpha = brightness * 60 + 20;
+    // 外層光暈（總是顯示）- 增加基礎透明度
+    const outerGlowAlpha = brightness * 120 + 80;
     fill(baseColor[0], baseColor[1], baseColor[2], outerGlowAlpha);
     noStroke();
     ellipse(x, y, size * 2.2);
