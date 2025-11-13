@@ -470,9 +470,6 @@ function setup() {
 
         // 使用透明背景讓 CSS 聖誕夜空顯示
         clear();
-        // 初始繪製一次伯利恆之星和聖誕燈（cell 變數已經設定）
-        drawBethlehemStar();
-        drawChristmasLightBorder();
 
         // 啟用持續繪製以顯示動畫效果
         loop();
@@ -895,6 +892,12 @@ function drawChristmasLightBorder() {
 
 // 繪製單個聖誕燈泡 - 真實聖誕燈呼吸閃爍效果
 function drawChristmasLight(x, y, size, baseColor, phase) {
+    // 安全檢查：確保 baseColor 是有效的陣列
+    if (!baseColor || !Array.isArray(baseColor) || baseColor.length < 3) {
+        console.warn('drawChristmasLight: baseColor 無效，使用預設顏色');
+        baseColor = [255, 85, 85]; // 預設紅色
+    }
+    
     push();
     
     // 增強的呼吸燈效果 - 模擬真實聖誕燈
