@@ -768,10 +768,12 @@ function drawChristmasLightBorder() {
         return;
     }
     
+    // 聖誕燈系統已正常運作
+    
     const canvasWidth = cols * cell;
     const canvasHeight = rows * cell;
     
-    // 移除測試圓形，聖誕燈已經正常顯示
+    // 調試標記已移除，聖誕燈效果正常顯示
     
     // 聖誕燈顏色配置
     const christmasColors = [
@@ -785,55 +787,102 @@ function drawChristmasLightBorder() {
         [255, 255, 255]   // 白色
     ];
     
-    // 燈泡大小和間距設定 - 調整為合適大小
-    const lightSize = cell * 0.4;  // 調整燈泡大小為適中尺寸
+    // 燈泡大小和間距設定 - 調整為更精緻的大小避免重疊
+    const lightSize = cell * 0.3;  // 縮小燈泡大小避免與遊戲字符重疊
     const spacing = cell * 0.8;    // 調整燈泡間距
-    const borderOffset = lightSize * 3.0; // 增加偏移讓燈泡在邊框外
+    const borderOffset = lightSize * 2.0; // 減少偏移，讓燈泡更接近邊緣
     
     // 計算每邊的燈泡數量
     const topBottomLights = Math.floor(canvasWidth / spacing);
     const leftRightLights = Math.floor(canvasHeight / spacing);
     
-    // 閃爍動畫相位 - 增強版
+    // 聖誕燈數量計算完成
+    
+    // 真實聖誕燈閃爍動畫 - 交替閃爍效果
     const time = millis() * 0.001; // 轉換為秒
-    const blinkSpeed = 1.5; // 稍微放慢閃爍速度，讓效果更明顯
+    const baseBlinkSpeed = 1.2; // 基礎閃爍速度
+    const waveSpeed = 0.8; // 波浪傳播速度
     
     // 繪製邊框的四條邊
     
-    // 上邊 - 放在畫布上方邊框外
+    // 上邊 - 放在畫布內側上邊緣
     for (let i = 0; i < topBottomLights; i++) {
         const x = (i + 0.5) * spacing;
-        const y = -borderOffset; // 放在畫布上方邊框外
-        const colorIndex = i % christmasColors.length;
-        const phase = time * blinkSpeed + (i * 0.3);
-        drawChristmasLight(x, y, lightSize, christmasColors[colorIndex], phase);
+        const y = lightSize / 2 + 1; // 更貼近上邊緣
+        
+        // 動態顏色輪替：每個燈泡在不同時間顯示不同顏色
+        const colorCycleSpeed = 0.5; // 顏色變化速度
+        const baseColorIndex = i % christmasColors.length;
+        const colorOffset = Math.floor(time * colorCycleSpeed + i * 0.5) % christmasColors.length;
+        const dynamicColorIndex = (baseColorIndex + colorOffset) % christmasColors.length;
+        
+        // 交替閃爍效果：奇偶燈泡使用不同的相位
+        const alternatePhase = (i % 2) * PI; // 奇偶燈泡相位差180度
+        const wavePhase = (i / topBottomLights) * TWO_PI * waveSpeed; // 波浪傳播效果
+        const phase = time * baseBlinkSpeed + alternatePhase + wavePhase;
+        
+        // 使用完整的聖誕燈效果
+        drawChristmasLight(x, y, lightSize, christmasColors[dynamicColorIndex], phase);
     }
     
-    // 下邊 - 放在畫布下方邊框外
+    // 下邊 - 放在畫布內側下邊緣
     for (let i = 0; i < topBottomLights; i++) {
         const x = (i + 0.5) * spacing;
-        const y = canvasHeight + borderOffset; // 放在畫布下方邊框外
-        const colorIndex = (i + 2) % christmasColors.length;
-        const phase = time * blinkSpeed + (i * 0.3) + 1.5;
-        drawChristmasLight(x, y, lightSize, christmasColors[colorIndex], phase);
+        const y = canvasHeight - lightSize / 2 - 1; // 更貼近下邊緣
+        
+        // 下邊燈泡顏色輪替：與上邊不同步
+        const colorCycleSpeed = 0.6; // 稍快的顏色變化
+        const baseColorIndex = (i + 2) % christmasColors.length;
+        const colorOffset = Math.floor(time * colorCycleSpeed + i * 0.7 + 3) % christmasColors.length;
+        const dynamicColorIndex = (baseColorIndex + colorOffset) % christmasColors.length;
+        
+        // 下邊燈泡與上邊相反的交替閃爍
+        const alternatePhase = ((i + 1) % 2) * PI; // 與上邊相反的奇偶模式
+        const wavePhase = (i / topBottomLights) * TWO_PI * waveSpeed + PI; // 反向波浪
+        const phase = time * baseBlinkSpeed + alternatePhase + wavePhase + 1.5;
+        
+        // 使用完整的聖誕燈效果
+        drawChristmasLight(x, y, lightSize, christmasColors[dynamicColorIndex], phase);
     }
     
-    // 左邊 - 放在畫布左方邊框外
+    // 左邊 - 放在畫布內側左邊緣
     for (let i = 0; i < leftRightLights; i++) {
-        const x = -borderOffset; // 放在畫布左方邊框外
+        const x = lightSize / 2 + 1; // 更貼近左邊緣
         const y = (i + 0.5) * spacing;
-        const colorIndex = (i + 4) % christmasColors.length;
-        const phase = time * blinkSpeed + (i * 0.3) + 3.0;
-        drawChristmasLight(x, y, lightSize, christmasColors[colorIndex], phase);
+        
+        // 左邊燈泡顏色輪替：垂直方向的彩虹效果
+        const colorCycleSpeed = 0.4; // 慢速顏色變化
+        const baseColorIndex = (i + 4) % christmasColors.length;
+        const colorOffset = Math.floor(time * colorCycleSpeed + i * 0.3 + 5) % christmasColors.length;
+        const dynamicColorIndex = (baseColorIndex + colorOffset) % christmasColors.length;
+        
+        // 左邊燈泡垂直方向的交替閃爍
+        const alternatePhase = (i % 3) * (TWO_PI / 3); // 三分相位，更豐富的變化
+        const wavePhase = (i / leftRightLights) * TWO_PI * waveSpeed * 1.2; // 稍快的波浪
+        const phase = time * baseBlinkSpeed + alternatePhase + wavePhase + 3.0;
+        
+        // 使用完整的聖誕燈效果
+        drawChristmasLight(x, y, lightSize, christmasColors[dynamicColorIndex], phase);
     }
     
-    // 右邊 - 放在畫布右方邊框外
+    // 右邊 - 放在畫布內側右邊緣
     for (let i = 0; i < leftRightLights; i++) {
-        const x = canvasWidth + borderOffset; // 放在畫布右方邊框外
+        const x = canvasWidth - lightSize / 2 - 1; // 更貼近右邊緣
         const y = (i + 0.5) * spacing;
-        const colorIndex = (i + 6) % christmasColors.length;
-        const phase = time * blinkSpeed + (i * 0.3) + 4.5;
-        drawChristmasLight(x, y, lightSize, christmasColors[colorIndex], phase);
+        
+        // 右邊燈泡顏色輪替：與左邊反向的彩虹效果
+        const colorCycleSpeed = 0.7; // 快速顏色變化
+        const baseColorIndex = (i + 6) % christmasColors.length;
+        const colorOffset = Math.floor(time * colorCycleSpeed - i * 0.4 + 7) % christmasColors.length;
+        const dynamicColorIndex = (baseColorIndex + colorOffset) % christmasColors.length;
+        
+        // 右邊燈泡與左邊相反的交替閃爍
+        const alternatePhase = ((i + 2) % 3) * (TWO_PI / 3); // 與左邊錯開的三分相位
+        const wavePhase = (i / leftRightLights) * TWO_PI * waveSpeed * -1.2 + PI; // 反向快速波浪
+        const phase = time * baseBlinkSpeed + alternatePhase + wavePhase + 4.5;
+        
+        // 使用完整的聖誕燈效果
+        drawChristmasLight(x, y, lightSize, christmasColors[dynamicColorIndex], phase);
     }
     
     // 繪製邊框線（連接燈泡的電線）- 邊框外圈
@@ -844,61 +893,71 @@ function drawChristmasLightBorder() {
          canvasWidth + borderOffset, canvasHeight + borderOffset);
 }
 
-// 繪製單個聖誕燈泡 - 增強版
+// 繪製單個聖誕燈泡 - 真實聖誕燈呼吸閃爍效果
 function drawChristmasLight(x, y, size, baseColor, phase) {
     push();
     
-    // 計算增強的亮度（呼吸效果）- 更明顯的亮度變化
-    const brightness = 0.6 + 0.4 * (0.5 + 0.5 * sin(phase));
+    // 增強的呼吸燈效果 - 模擬真實聖誕燈
+    const breatheCycle = sin(phase);
+    const brightness = 0.4 + 0.6 * (0.5 + 0.5 * breatheCycle); // 0.4 到 1.0 的亮度範圍
     
-    // 外層光暈（總是顯示）- 增加基礎透明度
-    const outerGlowAlpha = brightness * 120 + 80;
-    fill(baseColor[0], baseColor[1], baseColor[2], outerGlowAlpha);
-    noStroke();
-    ellipse(x, y, size * 2.2);
+    // 添加隨機閃爍效果（模擬電流不穩定）
+    const flickerIntensity = 0.95 + 0.05 * sin(phase * 3.7); // 輕微閃爍
+    const finalBrightness = brightness * flickerIntensity;
     
-    // 中層光暈
-    fill(baseColor[0], baseColor[1], baseColor[2], outerGlowAlpha * 1.5);
-    ellipse(x, y, size * 1.6);
+    // 多層光暈效果 - 真實聖誕燈的光暈
+    for (let i = 0; i < 4; i++) {
+        const glowRadius = size * (2.5 - i * 0.4);
+        const glowAlpha = finalBrightness * (80 - i * 15) + (20 - i * 5);
+        fill(baseColor[0], baseColor[1], baseColor[2], glowAlpha);
+        noStroke();
+        ellipse(x, y, glowRadius);
+    }
     
-    // 燈泡主體 - 增強顏色飽和度
-    const enhancedR = Math.min(255, baseColor[0] * brightness * 1.2);
-    const enhancedG = Math.min(255, baseColor[1] * brightness * 1.2);
-    const enhancedB = Math.min(255, baseColor[2] * brightness * 1.2);
+    // 燈泡主體 - 動態顏色強度
+    const enhancedR = Math.min(255, baseColor[0] * finalBrightness * 1.3);
+    const enhancedG = Math.min(255, baseColor[1] * finalBrightness * 1.3);
+    const enhancedB = Math.min(255, baseColor[2] * finalBrightness * 1.3);
     
+    // 燈泡邊框（模擬塑膠外殼）
     fill(enhancedR, enhancedG, enhancedB);
-    stroke(baseColor[0] * 0.3, baseColor[1] * 0.3, baseColor[2] * 0.3);
-    strokeWeight(2);
+    stroke(baseColor[0] * 0.4, baseColor[1] * 0.4, baseColor[2] * 0.4, 180);
+    strokeWeight(1.5);
     ellipse(x, y, size);
     
-    // 燈泡高亮 - 更明顯
-    fill(255, 255, 255, brightness * 200 + 80);
+    // 內層發光核心 - 呼吸效果
+    const coreAlpha = finalBrightness * 220 + 35;
+    fill(255, 255, 255, coreAlpha);
     noStroke();
-    ellipse(x - size * 0.2, y - size * 0.2, size * 0.4);
+    ellipse(x, y, size * 0.6);
     
-    // 燈泡頂部金屬帽 - 更明顯
-    fill(160, 160, 160, 200);
-    stroke(100, 100, 100, 150);
-    strokeWeight(1.5);
-    ellipse(x, y - size * 0.45, size * 0.5, size * 0.25);
+    // 高亮反光點
+    fill(255, 255, 255, finalBrightness * 180 + 75);
+    ellipse(x - size * 0.15, y - size * 0.15, size * 0.25);
     
-    // 內層亮光核心
-    fill(255, 255, 255, brightness * 100);
-    noStroke();
-    ellipse(x, y, size * 0.4);
+    // 燈泡頂部金屬螺紋帽
+    fill(120, 120, 120, 200);
+    stroke(80, 80, 80, 150);
+    strokeWeight(1);
+    ellipse(x, y - size * 0.4, size * 0.4, size * 0.15);
     
-    // 強化光暈效果（高亮度時）
-    if (brightness > 0.6) {
-        const strongGlowAlpha = (brightness - 0.6) * 200;
-        fill(baseColor[0], baseColor[1], baseColor[2], strongGlowAlpha);
-        noStroke();
-        ellipse(x, y, size * 2.8);
+    // 強亮度時的十字光芒效果
+    if (finalBrightness > 0.7) {
+        const rayLength = size * 0.8;
+        const rayAlpha = (finalBrightness - 0.7) * 300;
         
-        // 十字光芒效果
-        stroke(baseColor[0], baseColor[1], baseColor[2], strongGlowAlpha);
-        strokeWeight(3);
-        line(x - size, y, x + size, y);
-        line(x, y - size, x, y + size);
+        stroke(255, 255, 255, rayAlpha);
+        strokeWeight(2);
+        // 主十字光芒
+        line(x - rayLength, y, x + rayLength, y);
+        line(x, y - rayLength, x, y + rayLength);
+        
+        stroke(baseColor[0], baseColor[1], baseColor[2], rayAlpha * 0.8);
+        strokeWeight(1);
+        // 對角光芒
+        const diagLength = rayLength * 0.7;
+        line(x - diagLength, y - diagLength, x + diagLength, y + diagLength);
+        line(x - diagLength, y + diagLength, x + diagLength, y - diagLength);
     }
     
     pop();
@@ -1484,8 +1543,20 @@ function spawnFood() {
         let attempts = 0;
         const maxAttempts = GAME_CONFIG.MAX_SPAWN_ATTEMPTS; // 防止無限迴圈
 
+        // 定義安全區域邊距，避免與聖誕燈重疊
+        const safeMargin = 1; // 距離邊緣至少1格
+        const safeMinX = safeMargin;
+        const safeMaxX = cols - 1 - safeMargin;
+        const safeMinY = safeMargin;
+        const safeMaxY = rows - 1 - safeMargin;
+
         do {
-            p = { x: floor(random(cols)), y: floor(random(rows)), char };
+            // 在安全區域內生成食物
+            p = { 
+                x: floor(random(safeMinX, safeMaxX + 1)), 
+                y: floor(random(safeMinY, safeMaxY + 1)), 
+                char 
+            };
             attempts++;
 
             if (attempts > maxAttempts) {
@@ -1495,6 +1566,9 @@ function spawnFood() {
         } while (
             snake.some(s => s.x === p.x && s.y === p.y) ||
             foods.some(f => f.x === p.x && f.y === p.y) ||
+            // 額外檢查：確保不在邊緣安全區域
+            p.x < safeMinX || p.x > safeMaxX ||
+            p.y < safeMinY || p.y > safeMaxY ||
             // 避免出現在四個角落
             (p.x === 0 && p.y === 0) ||         // 左上角
             (p.x === cols - 1 && p.y === 0) || // 右上角
