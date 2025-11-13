@@ -462,17 +462,20 @@ function setup() {
         console.log('Setup開始 - 聖誕夜空背景由 CSS 控制');
 
         DOMManager.init();
-        initializeCanvas();
+        initializeCanvas(); // 這裡會設定 cell 變數
         initializeGameSettings();
         resetGame();
         setupControls();
         initializeBethlehemStar();
 
-        // 使用透明背景讓 CSS 聖誕夜空顯示，繪製聖誕燈邊框
+        // 使用透明背景讓 CSS 聖誕夜空顯示
         clear();
+        // 初始繪製一次伯利恆之星和聖誕燈（cell 變數已經設定）
+        drawBethlehemStar();
         drawChristmasLightBorder();
 
-        noLoop();
+        // 啟用持續繪製以顯示動畫效果
+        loop();
 
         console.log('遊戲初始化完成 - 聖誕夜空背景');
         validateGameConfig();
@@ -759,8 +762,16 @@ function triggerBethlehemStarEffect(duration = 3000) {
 
 // 聖誕燈彩色邊框系統
 function drawChristmasLightBorder() {
+    // 確保變數已正確初始化
+    if (!cell || !cols || !rows) {
+        console.warn('Canvas 變數未正確初始化:', { cell, cols, rows });
+        return;
+    }
+    
     const canvasWidth = cols * cell;
     const canvasHeight = rows * cell;
+    
+    console.log('繪製聖誕燈 - Canvas尺寸:', canvasWidth, 'x', canvasHeight, 'Cell:', cell);
     
     // 聖誕燈顏色配置
     const christmasColors = [
@@ -789,12 +800,17 @@ function drawChristmasLightBorder() {
     
     // 繪製邊框的四條邊
     
+    console.log('繪製聖誕燈數量 - 上下:', topBottomLights, '左右:', leftRightLights, '燈泡大小:', lightSize);
+    
     // 上邊
     for (let i = 0; i < topBottomLights; i++) {
         const x = (i + 0.5) * spacing;
         const y = -borderOffset;
         const colorIndex = i % christmasColors.length;
         const phase = time * blinkSpeed + (i * 0.3); // 每個燈有不同相位
+        if (i === 0) {
+            console.log('第一個上邊燈泡位置:', x, y, '顏色:', christmasColors[colorIndex]);
+        }
         drawChristmasLight(x, y, lightSize, christmasColors[colorIndex], phase);
     }
     
@@ -1182,14 +1198,15 @@ function draw() {
         updateBethlehemStar();
         drawBethlehemStar();
 
+        // 聖誕燈彩色邊框（始終顯示）
+        drawChristmasLightBorder();
+
         // 僅在前10幀顯示調試信息
         if (frameCount <= 10) {
             console.log('Frame', frameCount, '聖誕夜空背景：由 CSS 控制');
+            console.log('Canvas 尺寸:', cols * cell, 'x', rows * cell, ', cell:', cell);
         }
         
-        // 聖誕燈彩色邊框
-        drawChristmasLightBorder();
-
         // 只有在遊戲進行中且未暫停才執行遊戲邏輯
         if (gameState === 'PLAYING' && !isPaused) {
             // 倒數 & HUD - 添加安全檢查
