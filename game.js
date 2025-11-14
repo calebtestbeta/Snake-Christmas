@@ -316,7 +316,16 @@ function initializeCanvas() {
     cols = GAME_CONFIG.GRID_COLS;
     rows = GAME_CONFIG.GRID_ROWS;
 
-    console.log(`Canvas初始化: ${canvasSize.width}x${canvasSize.height}, Cell大小: ${cell}, 網格: ${GAME_CONFIG.GRID_COLS}x${GAME_CONFIG.GRID_ROWS}`);
+    // 小螢幕設備調整遊戲網格行數，保持遊戲平衡
+    const isMobile = windowWidth <= GAME_CONFIG.MOBILE_BREAKPOINT;
+    if (isMobile && windowHeight <= 700) {
+        // 按照 Canvas 高度的同等比例調整行數
+        const heightReduction = 0.75;
+        rows = Math.floor(GAME_CONFIG.GRID_ROWS * heightReduction);
+        console.log(`小螢幕優化: 遊戲網格行數從 ${GAME_CONFIG.GRID_ROWS} 調整為 ${rows}`);
+    }
+
+    console.log(`Canvas初始化: ${canvasSize.width}x${canvasSize.height}, Cell大小: ${cell}, 網格: ${cols}x${rows}`);
 }
 
 function calculateOptimalCanvasSize() {
@@ -400,9 +409,21 @@ function calculateOptimalCanvasSize() {
         }
     }
 
+    // 小螢幕設備 Canvas 高度優化 - 根本性解決按鈕重疊問題
+    let finalCanvasWidth = canvasWidth;
+    let finalCanvasHeight = canvasHeight;
+    
+    if (isMobile && windowHeight <= 700) {
+        // 在小螢幕上減少 Canvas 高度，為按鈕區域預留足夠空間
+        const heightReduction = 0.75; // 保留75%的高度
+        finalCanvasHeight = Math.floor(canvasHeight * heightReduction);
+        
+        console.log(`小螢幕優化: Canvas高度從 ${canvasHeight}px 調整為 ${finalCanvasHeight}px (${Math.round((1-heightReduction)*100)}% 減少)`);
+    }
+
     return {
-        width: canvasWidth,
-        height: canvasHeight,
+        width: finalCanvasWidth,
+        height: finalCanvasHeight,
         cellSize: optimalCellSize
     };
 }
@@ -698,6 +719,15 @@ function startGame() {
     DOMManager.show('countdownScreen');
     DOMManager.setContent('countdownNumber', 3);
 
+    // GA4 事件追蹤：遊戲開始
+    if (typeof gtag !== 'undefined') {
+        gtag('event', 'game_start', {
+            'event_category': 'engagement',
+            'event_label': 'christmas_snake_game',
+            'difficulty': difficulty
+        });
+    }
+
     let count = 3;
     let countdownInterval = setInterval(() => {
         count--;
@@ -940,7 +970,9 @@ function drawChristmasLightBorder() {
     // 聖誕燈系統已正常運作
     
     const canvasWidth = cols * cell;
-    const canvasHeight = rows * cell;
+    let canvasHeight = rows * cell;
+    
+    // 聖誕燈現在會自動適應調整後的 Canvas 尺寸
     
     // 調試標記已移除，聖誕燈效果正常顯示
     
@@ -961,7 +993,7 @@ function drawChristmasLightBorder() {
     const spacing = cell * 0.8;    // 調整燈泡間距
     const borderOffset = lightSize * 2.0; // 減少偏移，讓燈泡更接近邊緣
     
-    // 計算每邊的燈泡數量
+    // 計算每邊的燈泡數量（使用調整後的高度）
     const topBottomLights = Math.floor(canvasWidth / spacing);
     const leftRightLights = Math.floor(canvasHeight / spacing);
     
@@ -1227,6 +1259,16 @@ function checkForCompletedPhrases() {
             
             if (canComplete) {
                 newCompletedPhrases.push(phrase);
+                
+                // GA4 事件追蹤：完成詞句
+                if (typeof gtag !== 'undefined') {
+                    gtag('event', 'phrase_completed', {
+                        'event_category': 'achievement',
+                        'event_label': phrase,
+                        'phrase_length': phrase.length,
+                        'total_completed': completedPhrases.length + newCompletedPhrases.length
+                    });
+                }
                 completedPhrases.push(phrase);
                 
                 // 應用詞句特殊效果
@@ -1970,6 +2012,18 @@ function gameOver() {
     noLoop();
     gameState = 'OVER';
     isPaused = false; // 重置暫停狀態
+
+    // GA4 事件追蹤：遊戲結束
+    if (typeof gtag !== 'undefined') {
+        gtag('event', 'game_end', {
+            'event_category': 'engagement',
+            'event_label': 'christmas_snake_game',
+            'score': snake ? snake.length : 0,
+            'completed_phrases': completedPhrases ? completedPhrases.length : 0,
+            'game_duration': GAME_CONFIG.GAME_DURATION - timer,
+            'difficulty': difficulty
+        });
+    }
 
     try {
         // 安全地分析屬靈成長結果
