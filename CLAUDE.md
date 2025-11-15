@@ -278,6 +278,46 @@ The game prioritizes LINE SEED TW fonts with automatic fallback detection, optim
 - **User Request**: Hide font availability notice while preserving detection logic
 - **Implementation**: Added `style="display: none;"` to font notice div while maintaining all font detection functionality
 
+### 2024-11-15 - Analytics Integration & Error Fixes
+
+#### Google Analytics 4 Implementation
+
+**Comprehensive Event Tracking System**
+- **Measurement ID Integration**: G-LZ4KDGDLED configured in index.html
+- **Game Start Events**: Track player engagement initiation with difficulty metadata
+- **Phrase Completion Events**: Monitor Christmas phrase achievement rates and popularity
+- **Game End Events**: Capture session performance metrics including score, duration, and completion stats
+
+**Developer Testing Infrastructure**
+- **GA4 Test Helper**: Built comprehensive testing tool (ga4-test-helper.html)
+- **Event Validation**: Real-time testing interface with network request monitoring
+- **Debug Integration**: Browser developer tools integration for event verification
+
+**Critical Bug Fixes**
+- **gameOver() Error Resolution**: Fixed `Cannot read properties of undefined (reading 'length')` error
+- **Safe Property Access**: Implemented defensive programming with null checks (`snake ? snake.length : 0`)
+- **Graceful Degradation**: Added gtag availability checks to prevent tracking failures
+
+**Technical Implementation Details**
+```javascript
+// Added comprehensive error handling in GA4 events
+'score': snake ? snake.length : 0,
+'completed_phrases': completedPhrases ? completedPhrases.length : 0,
+```
+
+#### Analytics Integration Architecture
+
+**Event Tracking Strategy**
+- **Non-intrusive Monitoring**: Zero impact on game performance or user experience
+- **Privacy-First Approach**: No personal data collection, only gameplay interaction metrics
+- **Real-time Validation**: Immediate verification system for development and testing
+
+**Future Data Applications**
+- **Game Balance Optimization**: Data-driven difficulty adjustments based on completion rates  
+- **Content Strategy**: Identify most popular Christmas phrases for content expansion
+- **Performance Monitoring**: Device-specific analytics for responsive design optimization
+- **User Experience Enhancement**: Session duration analysis for engagement optimization
+
 ### 2024-11-13 - Revolutionary Task Completion Optimization
 
 #### Major Gameplay Enhancement: 3-5x Phrase Completion Rate Improvement
@@ -476,8 +516,105 @@ echo "🚀 Starting fresh server..."
 python3 -m http.server 8000
 ```
 
+## Analytics & Statistics Integration
+
+### Google Analytics 4 (GA4) Setup
+
+#### Implementation Overview
+The game integrates comprehensive GA4 event tracking to monitor player interactions and game performance.
+
+**GA4 Configuration**:
+- **Measurement ID**: G-LZ4KDGDLED (configured in index.html)
+- **Implementation**: Global Site Tag (gtag.js) with custom event tracking
+- **Privacy**: No personal data collected, only game interaction metrics
+
+#### Tracked Events
+
+**Core Game Events**:
+1. **game_start**: Triggered when player begins game
+   - Properties: difficulty level, event category
+   - Purpose: Track game session initiation rates
+
+2. **phrase_completed**: Triggered when Christmas phrases are completed  
+   - Properties: phrase text, phrase length, total completed count
+   - Purpose: Monitor phrase completion success rates and popular phrases
+
+3. **game_end**: Triggered when game session ends
+   - Properties: final score, completed phrases count, game duration, difficulty
+   - Purpose: Analyze game performance and session length
+
+**Page Analytics**:
+- **page_view**: Automatic tracking of game page visits
+- **user_engagement**: Session duration and interaction metrics
+
+#### GA4 Event Testing
+
+**Testing Tools**:
+- `ga4-test-helper.html`: Comprehensive testing interface for GA4 events
+- Real-time event validation with browser developer tools
+- Network request monitoring for gtag API calls
+
+**Testing Procedure**:
+1. Open ga4-test-helper.html in browser
+2. Enable browser Developer Tools > Network tab
+3. Filter for "google-analytics.com" or "collect" requests
+4. Execute test events and verify network requests
+5. Check GA4 Real-time Reports for event confirmation
+
+#### Development Integration
+
+**Code Implementation**:
+```javascript
+// Game start tracking (game.js:722-729)
+if (typeof gtag !== 'undefined') {
+    gtag('event', 'game_start', {
+        'event_category': 'engagement',
+        'event_label': 'christmas_snake_game',
+        'difficulty': difficulty
+    });
+}
+
+// Phrase completion tracking (game.js:1263-1271)
+gtag('event', 'phrase_completed', {
+    'event_category': 'achievement',
+    'event_label': phrase,
+    'phrase_length': phrase.length,
+    'total_completed': completedPhrases.length + newCompletedPhrases.length
+});
+
+// Game end tracking (game.js:2017-2025)
+gtag('event', 'game_end', {
+    'event_category': 'engagement',
+    'event_label': 'christmas_snake_game',
+    'score': snake ? snake.length : 0,
+    'completed_phrases': completedPhrases ? completedPhrases.length : 0,
+    'game_duration': GAME_CONFIG.GAME_DURATION - timer,
+    'difficulty': difficulty
+});
+```
+
+**Error Handling**:
+- Safe checks for gtag availability: `typeof gtag !== 'undefined'`
+- Null-safe object property access: `snake ? snake.length : 0`
+- Graceful fallbacks when tracking fails
+
+#### Data Analysis Applications
+
+**Performance Metrics**:
+- Game completion rates by difficulty level
+- Average session duration and engagement time
+- Most popular Christmas phrases completed
+- Player progression patterns and drop-off points
+
+**Optimization Insights**:
+- Identify difficult gameplay segments requiring balance adjustments
+- Monitor phrase completion success rates for difficulty tuning
+- Track user engagement to optimize game duration
+- Analyze device-specific performance patterns
+
 ### Configuration Requirements
 - **Language**: 繁體中文 (Traditional Chinese) with Taiwan-specific terminology
 - **Theme**: Christmas and Christian faith elements
 - **Target Devices**: Multi-platform support (Desktop, Tablet, Mobile)
 - **Performance**: Optimized for various device capabilities with graceful degradation
+- **Analytics**: GA4 integration for comprehensive player behavior tracking
