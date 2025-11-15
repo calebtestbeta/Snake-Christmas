@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GA4 測試輔助工具</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        button {
+            background: #4285f4;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #3367d6;
+        }
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .success {
+            color: #28a745;
+        }
+        .error {
+            color: #dc3545;
+        }
+        .info {
+            color: #17a2b8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 GA4 事件測試工具</h1>
+        <p>這個工具可以幫助你測試 GA4 事件是否正確發送</p>
+        
+        <div class="test-section">
+            <h3>📋 檢查清單</h3>
+            <div id="checklist">
+                <div>✅ GA4 腳本載入檢查</div>
+                <div id="gtag-check">❓ gtag 函數可用性檢查</div>
+                <div id="measurement-check">❓ 測量 ID 設定檢查</div>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h3>🧪 事件測試</h3>
+            <button onclick="testGameStartEvent()">測試遊戲開始事件</button>
+            <button onclick="testPhraseEvent()">測試詞句完成事件</button>
+            <button onclick="testGameEndEvent()">測試遊戲結束事件</button>
+            <button onclick="clearLog()">清除日誌</button>
+        </div>
+
+        <div class="test-section">
+            <h3>📊 事件日誌</h3>
+            <div id="eventLog" class="log">點擊上方按鈕開始測試...</div>
+        </div>
+
+        <div class="test-section">
+            <h3>📖 說明</h3>
+            <p><strong>如何驗證事件發送成功：</strong></p>
+            <ol>
+                <li>打開瀏覽器開發者工具 (F12)</li>
+                <li>切換到 "Network" (網路) 分頁</li>
+                <li>篩選 "google-analytics.com" 或 "collect"</li>
+                <li>點擊測試按鈕，查看是否有新的請求出現</li>
+                <li>前往 GA4 即時報表確認數據接收</li>
+            </ol>
+        </div>
+    </div>
+
+    <!-- GA4 追蹤碼 -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-LZ4KDGDLED"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-LZ4KDGDLED');
+    </script>
+
+    <script>
+        function log(message, type = 'info') {
+            const logElement = document.getElementById('eventLog');
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type === 'error' ? 'error' : type === 'success' ? 'success' : 'info';
+            logElement.innerHTML += `<span class="${className}">[${timestamp}] ${message}</span>\n`;
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+
+        function clearLog() {
+            document.getElementById('eventLog').innerHTML = '';
+        }
+
+        // 檢查 GA4 設定
+        window.onload = function() {
+            // 檢查 gtag 函數
+            if (typeof gtag !== 'undefined') {
+                document.getElementById('gtag-check').innerHTML = '✅ gtag 函數已載入';
+                log('GA4 gtag 函數載入成功', 'success');
+            } else {
+                document.getElementById('gtag-check').innerHTML = '❌ gtag 函數未載入';
+                log('錯誤：GA4 gtag 函數未載入', 'error');
+            }
+
+            // 檢查測量 ID
+            document.getElementById('measurement-check').innerHTML = '✅ 測量 ID: G-LZ4KDGDLED';
+            log('測量 ID 設定：G-LZ4KDGDLED', 'success');
+        };
+
+        function testGameStartEvent() {
+            log('🚀 測試遊戲開始事件...', 'info');
+            if (typeof gtag !== 'undefined') {
+                gtag('event', 'game_start', {
+                    'event_category': 'engagement',
+                    'event_label': 'christmas_snake_game',
+                    'difficulty': 'test_mode'
+                });
+                log('✅ 遊戲開始事件已發送', 'success');
+            } else {
+                log('❌ 無法發送事件：gtag 未定義', 'error');
+            }
+        }
+
+        function testPhraseEvent() {
+            log('🎄 測試詞句完成事件...', 'info');
+            if (typeof gtag !== 'undefined') {
+                gtag('event', 'phrase_completed', {
+                    'event_category': 'achievement',
+                    'event_label': '聖誕快樂',
+                    'phrase_length': 4,
+                    'total_completed': 1
+                });
+                log('✅ 詞句完成事件已發送 (聖誕快樂)', 'success');
+            } else {
+                log('❌ 無法發送事件：gtag 未定義', 'error');
+            }
+        }
+
+        function testGameEndEvent() {
+            log('🏁 測試遊戲結束事件...', 'info');
+            if (typeof gtag !== 'undefined') {
+                gtag('event', 'game_end', {
+                    'event_category': 'engagement',
+                    'event_label': 'christmas_snake_game',
+                    'score': 15,
+                    'completed_phrases': 2,
+                    'game_duration': 45,
+                    'difficulty': 'test_mode'
+                });
+                log('✅ 遊戲結束事件已發送', 'success');
+            } else {
+                log('❌ 無法發送事件：gtag 未定義', 'error');
+            }
+        }
+    </script>
+</body>
+</html>
