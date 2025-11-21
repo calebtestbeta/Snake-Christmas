@@ -712,10 +712,13 @@ function validateGameConfig() {
 }
 
 function startGame() {
+    // 先重置遊戲狀態確定最終佈局（在倒數前）
+    resetGame();
+    
     // 隱藏起始視窗
     DOMManager.hide('startScreen');
 
-    // 顯示倒數視窗
+    // 顯示倒數視窗（此時玩家看到的就是最終遊戲佈局）
     DOMManager.show('countdownScreen');
     DOMManager.setContent('countdownNumber', 5);
 
@@ -736,21 +739,18 @@ function startGame() {
         } else {
             clearInterval(countdownInterval);
             DOMManager.hide('countdownScreen');
-            // 設置遊戲狀態為正在遊戲
+            // 設置遊戲狀態為正在遊戲（不再重複 resetGame）
             gameState = 'PLAYING';
-            // 重置遊戲並開始
-            resetGame();
             // 使用透明背景讓 CSS 控制
             clear();
             loop();
-            console.log('遊戲開始！');
+            console.log('遊戲開始！遊戲佈局與倒數預覽一致');
         }
     }, 1000);
 
     // 如果找不到倒數視窗元素則直接開始
     if (!DOMManager.get('countdownScreen') || !DOMManager.get('countdownNumber')) {
         gameState = 'PLAYING';
-        resetGame();
         // 使用透明背景讓 CSS 控制
         clear();
         loop();
