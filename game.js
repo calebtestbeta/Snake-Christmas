@@ -717,7 +717,7 @@ function startGame() {
 
     // 顯示倒數視窗
     DOMManager.show('countdownScreen');
-    DOMManager.setContent('countdownNumber', 3);
+    DOMManager.setContent('countdownNumber', 5);
 
     // GA4 事件追蹤：遊戲開始
     if (typeof gtag !== 'undefined') {
@@ -728,7 +728,7 @@ function startGame() {
         });
     }
 
-    let count = 3;
+    let count = 5;
     let countdownInterval = setInterval(() => {
         count--;
         if (count > 0) {

@@ -183,6 +183,28 @@ The game prioritizes LINE SEED TW fonts with automatic fallback detection, optim
 
 ## Recent Development History (v1.0 聖誕祝福版)
 
+### 2025-11-21 - 倒數系統優化升級
+
+#### 使用者體驗增強
+- **倒數時間延長**: 從 3 秒延長至 5 秒，給予玩家更充足的準備時間
+- **背景透明度優化**: 倒數期間背景透明度從 `rgba(15, 15, 35, 0.9)` 調整為 `rgba(15, 15, 35, 0.3)`，大幅提高透明度
+- **視覺連續性提升**: 玩家在倒數期間可清楚看到遊戲初始狀態，包括蛇的起始位置、食物分布和聖誕夜空背景
+- **開始體驗最佳化**: 增強遊戲開始時的視覺連貫性，減少突兀感
+
+#### 技術實作細節
+**Code Changes** (`game.js:720, 731`):
+```javascript
+// 倒數初始值從 3 改為 5
+DOMManager.setContent('countdownNumber', 5);
+let count = 5;
+```
+
+**UI Enhancement** (`index.html:1923-1924`):
+```css
+/* 背景透明度大幅提高，從 0.9 降至 0.3 */
+background: rgba(15, 15, 35, 0.3);
+```
+
 ### 2024-11-12 - Christmas Blessing Theme Transformation
 
 #### Major Theme Conversion
