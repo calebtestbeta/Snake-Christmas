@@ -980,30 +980,8 @@ function drawChristmasLightBorder() {
         return;
     }
     
-    // 設備感知邊界計算系統
+    // 設備檢測
     const isMobile = windowWidth <= GAME_CONFIG.MOBILE_BREAKPOINT;
-    const isTablet = windowWidth > GAME_CONFIG.MOBILE_BREAKPOINT && windowWidth <= GAME_CONFIG.TABLET_BREAKPOINT;
-    
-    // 計算遊戲內容區域尺寸（基於實際 Canvas 尺寸而非網格）
-    const gameContentWidth = cols * cell;   // 遊戲網格寬度
-    const gameContentHeight = rows * cell;  // 遊戲網格高度
-    
-    // 智能邊界安全區域計算 - 基於實際控制按鈕尺寸和設備類型
-    let controlButtonSafeZone = 0;
-    if (isMobile) {
-        // 手機設備：使用實際像素值預留控制按鈕空間
-        if (windowWidth <= 320) {
-            controlButtonSafeZone = 90;  // iPhone SE: 預留 90px 的空間
-        } else if (windowWidth <= 428) {
-            controlButtonSafeZone = 100; // iPhone 13 Pro Max 等: 預留 100px 的空間
-        } else {
-            controlButtonSafeZone = 80;  // 其他手機: 預留 80px 的空間
-        }
-    } else if (isTablet) {
-        controlButtonSafeZone = 60;      // 平板: 預留 60px 安全區域
-    } else {
-        controlButtonSafeZone = 40;      // 桌面: 預留 40px 安全區域
-    }
     
     // 聖誕燈顏色配置
     const christmasColors = [
@@ -1017,127 +995,77 @@ function drawChristmasLightBorder() {
         [255, 255, 255]   // 白色
     ];
     
-    // 智能燈泡大小和間距設定 - 基於設備類型優化
-    const lightSize = cell * (isMobile ? 0.25 : 0.3);  // 手機使用較小燈泡
-    const spacing = cell * (isMobile ? 0.75 : 0.8);    // 手機使用較密集間距
-    const borderOffset = Math.max(lightSize * 1.5, controlButtonSafeZone); // 動態邊界偏移
+    // 簡化的燈泡設定 - 直接基於Canvas尺寸
+    const canvasWidth = cols * cell;   // Canvas實際寬度
+    const canvasHeight = rows * cell;  // Canvas實際高度
+    const lightSize = Math.max(8, cell * 0.3);  // 燈泡大小
+    const spacing = lightSize * 2.5;  // 燈泡間距
+    const margin = lightSize;  // 邊界邊距
     
-    // 計算每邊的燈泡數量（基於遊戲內容區域，考慮安全區域）
-    const topBottomLights = Math.floor(gameContentWidth / spacing);
-    const availableVerticalSpace = gameContentHeight - controlButtonSafeZone; // 減去底部安全區域
-    const leftRightLights = Math.floor(availableVerticalSpace / spacing);
+    // 計算燈泡數量 - 直接基於Canvas邊界
+    const horizontalLights = Math.floor((canvasWidth - margin * 2) / spacing);
+    const verticalLights = Math.floor((canvasHeight - margin * 2) / spacing);
     
     // 聖誕燈數量計算完成
     
-    // 真實聖誕燈閃爍動畫 - 交替閃爍效果
-    const time = millis() * 0.001; // 轉換為秒
-    const baseBlinkSpeed = 1.2; // 基礎閃爍速度
-    const waveSpeed = 0.8; // 波浪傳播速度
+    // 聖誕燈閃爍動畫
+    const time = millis() * 0.001;
+    const baseBlinkSpeed = 1.2;
+    const waveSpeed = 0.8;
     
-    // 繪製邊框的四條邊
-    
-    // 上邊 - 智能安全區域定位
-    for (let i = 0; i < topBottomLights; i++) {
-        const x = (i + 0.5) * spacing;
-        const y = Math.max(lightSize / 2 + 1, controlButtonSafeZone / 4); // 考慮安全區域
+    // 上邊框燈泡 - 沿著Canvas頂部邊界
+    for (let i = 0; i < horizontalLights; i++) {
+        const x = margin + (i + 0.5) * spacing;
+        const y = lightSize; // 直接貼著Canvas頂部
         
-        // 動態顏色輪替：每個燈泡在不同時間顯示不同顏色
-        const colorCycleSpeed = 0.5; // 顏色變化速度
-        const baseColorIndex = i % christmasColors.length;
-        const colorOffset = Math.floor(time * colorCycleSpeed + i * 0.5) % christmasColors.length;
-        const dynamicColorIndex = (baseColorIndex + colorOffset) % christmasColors.length;
+        const colorIndex = i % christmasColors.length;
+        const currentColor = christmasColors[colorIndex];
+        const phase = time * baseBlinkSpeed + i * 0.3;
         
-        // 安全檢查：確保顏色索引有效
-        const safeColorIndex = Math.max(0, Math.min(dynamicColorIndex, christmasColors.length - 1));
-        const currentColor = christmasColors[safeColorIndex] || [255, 85, 85]; // 預設紅色
-        
-        // 交替閃爍效果：奇偶燈泡使用不同的相位
-        const alternatePhase = (i % 2) * PI; // 奇偶燈泡相位差180度
-        const wavePhase = (i / topBottomLights) * TWO_PI * waveSpeed; // 波浪傳播效果
-        const phase = time * baseBlinkSpeed + alternatePhase + wavePhase;
-        
-        // 使用完整的聖誕燈效果
         drawChristmasLight(x, y, lightSize, currentColor, phase);
     }
     
-    // 下邊 - 智能安全區域定位（避免與控制按鈕重疊）
-    for (let i = 0; i < topBottomLights; i++) {
-        const x = (i + 0.5) * spacing;
-        const y = gameContentHeight - (controlButtonSafeZone * 0.5); // 使用一半的安全區域，更接近但不重疊
+    // 下邊框燈泡 - 沿著Canvas底部邊界  
+    for (let i = 0; i < horizontalLights; i++) {
+        const x = margin + (i + 0.5) * spacing;
+        const y = canvasHeight - lightSize; // 直接貼著Canvas底部
         
-        // 下邊燈泡顏色輪替：與上邊不同步
-        const colorCycleSpeed = 0.6; // 稍快的顏色變化
-        const baseColorIndex = (i + 2) % christmasColors.length;
-        const colorOffset = Math.floor(time * colorCycleSpeed + i * 0.7 + 3) % christmasColors.length;
-        const dynamicColorIndex = (baseColorIndex + colorOffset) % christmasColors.length;
+        const colorIndex = (i + 2) % christmasColors.length;
+        const currentColor = christmasColors[colorIndex];
+        const phase = time * baseBlinkSpeed + i * 0.3 + PI;
         
-        // 安全檢查：確保顏色索引有效
-        const safeColorIndex = Math.max(0, Math.min(dynamicColorIndex, christmasColors.length - 1));
-        const currentColor = christmasColors[safeColorIndex] || [85, 255, 85]; // 預設綠色
-        
-        // 下邊燈泡與上邊相反的交替閃爍
-        const alternatePhase = ((i + 1) % 2) * PI; // 與上邊相反的奇偶模式
-        const wavePhase = (i / topBottomLights) * TWO_PI * waveSpeed + PI; // 反向波浪
-        const phase = time * baseBlinkSpeed + alternatePhase + wavePhase + 1.5;
-        
-        // 使用完整的聖誕燈效果
         drawChristmasLight(x, y, lightSize, currentColor, phase);
     }
     
-    // 左邊 - 智能安全區域定位
-    for (let i = 0; i < leftRightLights; i++) {
-        const x = lightSize / 2 + 5; // 簡單的左邊邊距
-        const y = (i + 0.5) * spacing; // 使用調整後的燈泡數量，自動避開底部
+    // 左邊框燈泡 - 沿著Canvas左側邊界
+    for (let i = 0; i < verticalLights; i++) {
+        const x = lightSize; // 直接貼著Canvas左側
+        const y = margin + (i + 0.5) * spacing;
         
-        // 左邊燈泡顏色輪替：垂直方向的彩虹效果
-        const colorCycleSpeed = 0.4; // 慢速顏色變化
-        const baseColorIndex = (i + 4) % christmasColors.length;
-        const colorOffset = Math.floor(time * colorCycleSpeed + i * 0.3 + 5) % christmasColors.length;
-        const dynamicColorIndex = (baseColorIndex + colorOffset) % christmasColors.length;
+        const colorIndex = (i + 4) % christmasColors.length;
+        const currentColor = christmasColors[colorIndex];
+        const phase = time * baseBlinkSpeed + i * 0.4 + PI * 0.5;
         
-        // 安全檢查：確保顏色索引有效
-        const safeColorIndex = Math.max(0, Math.min(dynamicColorIndex, christmasColors.length - 1));
-        const currentColor = christmasColors[safeColorIndex] || [85, 85, 255]; // 預設藍色
-        
-        // 左邊燈泡垂直方向的交替閃爍
-        const alternatePhase = (i % 3) * (TWO_PI / 3); // 三分相位，更豐富的變化
-        const wavePhase = (i / leftRightLights) * TWO_PI * waveSpeed * 1.2; // 稍快的波浪
-        const phase = time * baseBlinkSpeed + alternatePhase + wavePhase + 3.0;
-        
-        // 使用完整的聖誕燈效果
         drawChristmasLight(x, y, lightSize, currentColor, phase);
     }
     
-    // 右邊 - 智能安全區域定位
-    for (let i = 0; i < leftRightLights; i++) {
-        const x = gameContentWidth - lightSize / 2 - 5; // 簡單的右邊邊距
-        const y = (i + 0.5) * spacing; // 使用調整後的燈泡數量，自動避開底部
+    // 右邊框燈泡 - 沿著Canvas右側邊界
+    for (let i = 0; i < verticalLights; i++) {
+        const x = canvasWidth - lightSize; // 直接貼著Canvas右側
+        const y = margin + (i + 0.5) * spacing;
         
-        // 右邊燈泡顏色輪替：與左邊反向的彩虹效果
-        const colorCycleSpeed = 0.7; // 快速顏色變化
-        const baseColorIndex = (i + 6) % christmasColors.length;
-        const colorOffset = Math.floor(time * colorCycleSpeed - i * 0.4 + 7) % christmasColors.length;
-        const dynamicColorIndex = (baseColorIndex + colorOffset) % christmasColors.length;
+        const colorIndex = (i + 6) % christmasColors.length;
+        const currentColor = christmasColors[colorIndex];
+        const phase = time * baseBlinkSpeed + i * 0.4 + PI * 1.5;
         
-        // 安全檢查：確保顏色索引有效
-        const safeColorIndex = Math.max(0, Math.min(dynamicColorIndex, christmasColors.length - 1));
-        const currentColor = christmasColors[safeColorIndex] || [255, 255, 85]; // 預設黃色
-        
-        // 右邊燈泡與左邊相反的交替閃爍
-        const alternatePhase = ((i + 2) % 3) * (TWO_PI / 3); // 與左邊錯開的三分相位
-        const wavePhase = (i / leftRightLights) * TWO_PI * waveSpeed * -1.2 + PI; // 反向快速波浪
-        const phase = time * baseBlinkSpeed + alternatePhase + wavePhase + 4.5;
-        
-        // 使用完整的聖誕燈效果
         drawChristmasLight(x, y, lightSize, currentColor, phase);
     }
     
-    // 繪製邊框線（連接燈泡的電線）- 圍繞遊戲內容區域
-    stroke(80, 80, 80, 120);
-    strokeWeight(2);
+    // 繪製邊框線（連接燈泡的電線）- 直接沿著Canvas邊界
+    stroke(80, 80, 80, 100);
+    strokeWeight(1.5);
     noFill();
-    rect(-borderOffset * 0.5, -borderOffset * 0.5, 
-         gameContentWidth + borderOffset, gameContentHeight + borderOffset);
+    rect(0, 0, canvasWidth, canvasHeight);
 }
 
 // 繪製單個聖誕燈泡 - 真實聖誕燈呼吸閃爍效果
@@ -1628,8 +1556,8 @@ function draw() {
         updateBethlehemStar();
         drawBethlehemStar();
 
-        // 聖誕燈彩色邊框（暫時停用以修復定位問題）
-        // drawChristmasLightBorder();
+        // 聖誕燈彩色邊框（優化後的座標系統）
+        drawChristmasLightBorder();
 
         // 僅在前10幀顯示調試信息
         if (frameCount <= 10) {
