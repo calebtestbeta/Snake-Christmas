@@ -980,13 +980,30 @@ function drawChristmasLightBorder() {
         return;
     }
     
-    // 計算遊戲內容區域尺寸（排除控制按鈕區域）
+    // 設備感知邊界計算系統
+    const isMobile = windowWidth <= GAME_CONFIG.MOBILE_BREAKPOINT;
+    const isTablet = windowWidth > GAME_CONFIG.MOBILE_BREAKPOINT && windowWidth <= GAME_CONFIG.TABLET_BREAKPOINT;
+    
+    // 計算遊戲內容區域尺寸（基於實際 Canvas 尺寸而非網格）
     const gameContentWidth = cols * cell;   // 遊戲網格寬度
     const gameContentHeight = rows * cell;  // 遊戲網格高度
     
-    // 聖誕燈只圍繞遊戲內容，不延伸到控制按鈕區域
-    
-    // 調試標記已移除，聖誕燈效果正常顯示
+    // 智能邊界安全區域計算 - 基於設備類型和控制按鈕位置
+    let controlButtonSafeZone = 0;
+    if (isMobile) {
+        // 手機設備：需要為控制按鈕預留更多空間
+        if (windowWidth <= 320) {
+            controlButtonSafeZone = cell * 1.5;  // iPhone SE: 預留 1.5 個 cell 的空間
+        } else if (windowWidth <= 428) {
+            controlButtonSafeZone = cell * 1.2;  // iPhone 13 Pro Max 等: 預留 1.2 個 cell 的空間
+        } else {
+            controlButtonSafeZone = cell * 1.0;  // 其他手機: 預留 1 個 cell 的空間
+        }
+    } else if (isTablet) {
+        controlButtonSafeZone = cell * 0.8;      // 平板: 較小的安全區域
+    } else {
+        controlButtonSafeZone = cell * 0.5;      // 桌面: 最小安全區域
+    }
     
     // 聖誕燈顏色配置
     const christmasColors = [
@@ -1000,10 +1017,10 @@ function drawChristmasLightBorder() {
         [255, 255, 255]   // 白色
     ];
     
-    // 燈泡大小和間距設定 - 調整為更精緻的大小避免重疊
-    const lightSize = cell * 0.3;  // 縮小燈泡大小避免與遊戲字符重疊
-    const spacing = cell * 0.8;    // 調整燈泡間距
-    const borderOffset = lightSize * 2.0; // 減少偏移，讓燈泡更接近邊緣
+    // 智能燈泡大小和間距設定 - 基於設備類型優化
+    const lightSize = cell * (isMobile ? 0.25 : 0.3);  // 手機使用較小燈泡
+    const spacing = cell * (isMobile ? 0.75 : 0.8);    // 手機使用較密集間距
+    const borderOffset = Math.max(lightSize * 1.5, controlButtonSafeZone); // 動態邊界偏移
     
     // 計算每邊的燈泡數量（基於遊戲內容區域）
     const topBottomLights = Math.floor(gameContentWidth / spacing);
@@ -1018,10 +1035,10 @@ function drawChristmasLightBorder() {
     
     // 繪製邊框的四條邊
     
-    // 上邊 - 放在畫布內側上邊緣
+    // 上邊 - 智能安全區域定位
     for (let i = 0; i < topBottomLights; i++) {
         const x = (i + 0.5) * spacing;
-        const y = lightSize / 2 + 1; // 更貼近上邊緣
+        const y = Math.max(lightSize / 2 + 1, controlButtonSafeZone / 4); // 考慮安全區域
         
         // 動態顏色輪替：每個燈泡在不同時間顯示不同顏色
         const colorCycleSpeed = 0.5; // 顏色變化速度
@@ -1042,10 +1059,10 @@ function drawChristmasLightBorder() {
         drawChristmasLight(x, y, lightSize, currentColor, phase);
     }
     
-    // 下邊 - 放在遊戲內容區域下邊緣
+    // 下邊 - 智能安全區域定位（避免與控制按鈕重疊）
     for (let i = 0; i < topBottomLights; i++) {
         const x = (i + 0.5) * spacing;
-        const y = gameContentHeight - lightSize / 2 - 1; // 遊戲內容區域下邊緣
+        const y = gameContentHeight - Math.max(lightSize / 2 + 1, controlButtonSafeZone); // 預留控制按鈕安全空間
         
         // 下邊燈泡顏色輪替：與上邊不同步
         const colorCycleSpeed = 0.6; // 稍快的顏色變化
@@ -1066,10 +1083,10 @@ function drawChristmasLightBorder() {
         drawChristmasLight(x, y, lightSize, currentColor, phase);
     }
     
-    // 左邊 - 放在畫布內側左邊緣
+    // 左邊 - 智能安全區域定位
     for (let i = 0; i < leftRightLights; i++) {
-        const x = lightSize / 2 + 1; // 更貼近左邊緣
-        const y = (i + 0.5) * spacing;
+        const x = Math.max(lightSize / 2 + 1, controlButtonSafeZone / 4); // 考慮安全區域
+        const y = Math.max(controlButtonSafeZone / 4, (i + 0.5) * spacing);
         
         // 左邊燈泡顏色輪替：垂直方向的彩虹效果
         const colorCycleSpeed = 0.4; // 慢速顏色變化
@@ -1090,10 +1107,10 @@ function drawChristmasLightBorder() {
         drawChristmasLight(x, y, lightSize, currentColor, phase);
     }
     
-    // 右邊 - 放在遊戲內容區域右邊緣
+    // 右邊 - 智能安全區域定位
     for (let i = 0; i < leftRightLights; i++) {
-        const x = gameContentWidth - lightSize / 2 - 1; // 遊戲內容區域右邊緣
-        const y = (i + 0.5) * spacing;
+        const x = gameContentWidth - Math.max(lightSize / 2 + 1, controlButtonSafeZone / 4); // 考慮安全區域
+        const y = Math.max(controlButtonSafeZone / 4, (i + 0.5) * spacing);
         
         // 右邊燈泡顏色輪替：與左邊反向的彩虹效果
         const colorCycleSpeed = 0.7; // 快速顏色變化
