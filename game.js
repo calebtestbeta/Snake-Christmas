@@ -980,11 +980,11 @@ function drawChristmasLightBorder() {
         return;
     }
     
-    // 使用實際的 Canvas 尺寸而非計算值
-    const canvasWidth = width;   // p5.js 提供的實際 canvas 寬度
-    const canvasHeight = height; // p5.js 提供的實際 canvas 高度
+    // 計算遊戲內容區域尺寸（排除控制按鈕區域）
+    const gameContentWidth = cols * cell;   // 遊戲網格寬度
+    const gameContentHeight = rows * cell;  // 遊戲網格高度
     
-    // 聖誕燈現在會自動適應調整後的 Canvas 尺寸
+    // 聖誕燈只圍繞遊戲內容，不延伸到控制按鈕區域
     
     // 調試標記已移除，聖誕燈效果正常顯示
     
@@ -1005,9 +1005,9 @@ function drawChristmasLightBorder() {
     const spacing = cell * 0.8;    // 調整燈泡間距
     const borderOffset = lightSize * 2.0; // 減少偏移，讓燈泡更接近邊緣
     
-    // 計算每邊的燈泡數量（使用調整後的高度）
-    const topBottomLights = Math.floor(canvasWidth / spacing);
-    const leftRightLights = Math.floor(canvasHeight / spacing);
+    // 計算每邊的燈泡數量（基於遊戲內容區域）
+    const topBottomLights = Math.floor(gameContentWidth / spacing);
+    const leftRightLights = Math.floor(gameContentHeight / spacing);
     
     // 聖誕燈數量計算完成
     
@@ -1042,10 +1042,10 @@ function drawChristmasLightBorder() {
         drawChristmasLight(x, y, lightSize, currentColor, phase);
     }
     
-    // 下邊 - 放在畫布內側下邊緣
+    // 下邊 - 放在遊戲內容區域下邊緣
     for (let i = 0; i < topBottomLights; i++) {
         const x = (i + 0.5) * spacing;
-        const y = canvasHeight - lightSize / 2 - 1; // 更貼近下邊緣
+        const y = gameContentHeight - lightSize / 2 - 1; // 遊戲內容區域下邊緣
         
         // 下邊燈泡顏色輪替：與上邊不同步
         const colorCycleSpeed = 0.6; // 稍快的顏色變化
@@ -1090,9 +1090,9 @@ function drawChristmasLightBorder() {
         drawChristmasLight(x, y, lightSize, currentColor, phase);
     }
     
-    // 右邊 - 放在畫布內側右邊緣
+    // 右邊 - 放在遊戲內容區域右邊緣
     for (let i = 0; i < leftRightLights; i++) {
-        const x = canvasWidth - lightSize / 2 - 1; // 更貼近右邊緣
+        const x = gameContentWidth - lightSize / 2 - 1; // 遊戲內容區域右邊緣
         const y = (i + 0.5) * spacing;
         
         // 右邊燈泡顏色輪替：與左邊反向的彩虹效果
@@ -1114,12 +1114,12 @@ function drawChristmasLightBorder() {
         drawChristmasLight(x, y, lightSize, currentColor, phase);
     }
     
-    // 繪製邊框線（連接燈泡的電線）- 邊框外圈
+    // 繪製邊框線（連接燈泡的電線）- 圍繞遊戲內容區域
     stroke(80, 80, 80, 120);
     strokeWeight(2);
     noFill();
     rect(-borderOffset * 0.5, -borderOffset * 0.5, 
-         canvasWidth + borderOffset, canvasHeight + borderOffset);
+         gameContentWidth + borderOffset, gameContentHeight + borderOffset);
 }
 
 // 繪製單個聖誕燈泡 - 真實聖誕燈呼吸閃爍效果
