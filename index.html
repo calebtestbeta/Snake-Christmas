@@ -1252,7 +1252,7 @@
         /* iPhone 12, iPhone 13, iPhone 14 (390x844) */
         @media (max-width: 390px) and (min-width: 376px) {
             canvas:not(#nutritionChart) {
-                margin: 80px auto 195px auto;  /* 平衡的定位設定 */
+                margin: 75px auto 250px auto;  /* 大幅增加底部邊距防止重疊 */
                 max-width: calc(100vw - 20px);  /* 簡化邊距計算 */
                 /* 移除padding */
             }
@@ -1267,7 +1267,7 @@
         /* iPhone 14 Plus, iPhone 12 Pro Max (428x926) */
         @media (max-width: 428px) and (min-width: 391px) {
             canvas:not(#nutritionChart) {
-                margin: 85px auto 200px auto;  /* 平衡的定位設定 */
+                margin: 80px auto 270px auto;  /* 大幅增加底部邊距防止重疊 */
                 max-width: calc(100vw - 20px);  /* 簡化邊距計算 */
                 /* 移除padding */
             }
@@ -1279,10 +1279,25 @@
             }
         }
         
-        /* 其他手機設備 */
-        @media (max-width: 480px) and (min-width: 429px) {
+        /* iPhone 16 Plus 和類似大螢幕手機 (430-450px) */
+        @media (max-width: 450px) and (min-width: 429px) {
             canvas:not(#nutritionChart) {
-                margin: 90px auto 205px auto;  /* 平衡的定位設定 */
+                margin: 80px auto 280px auto;  /* 大幅增加底部邊距防止重疊 */
+                max-width: calc(100vw - 20px);  /* 簡化邊距計算 */
+                /* 移除padding */
+            }
+            
+            #pad {
+                width: 175px;
+                height: 175px;
+                bottom: 12px;
+            }
+        }
+        
+        /* 其他手機設備 */
+        @media (max-width: 480px) and (min-width: 451px) {
+            canvas:not(#nutritionChart) {
+                margin: 90px auto 210px auto;  /* 平衡的定位設定 */
                 max-width: calc(100vw - 20px);  /* 簡化邊距計算 */
                 /* 移除padding */
             }

@@ -183,6 +183,44 @@ The game prioritizes LINE SEED TW fonts with automatic fallback detection, optim
 
 ## Recent Development History (v1.0 聖誕祝福版)
 
+### 2025-11-22 - iPhone 16 Plus Canvas 重疊問題修復
+
+#### 問題診斷與解決
+- **核心問題**: iPhone 16 Plus (430px 寬度) 的遊戲畫布與控制按鈕重疊
+- **根本原因**: 響應式斷點覆蓋不完整，iPhone 16 Plus 落入桌面版 CSS 規則範圍
+- **影響範圍**: 所有大螢幕 iPhone 設備 (iPhone 12 Pro Max, iPhone 14 Plus, iPhone 16 Plus)
+
+#### 技術實作解決方案
+
+**新增響應式斷點** (`index.html:1282-1295`):
+```css
+/* iPhone 16 Plus 和類似大螢幕手機 (430-450px) */
+@media (max-width: 450px) and (min-width: 429px) {
+    canvas:not(#nutritionChart) {
+        margin: 80px auto 280px auto;  /* 大幅增加底部邊距防止重疊 */
+        max-width: calc(100vw - 20px);
+    }
+}
+```
+
+**Canvas 底部邊距優化**:
+- **iPhone 16 Plus** (430-450px): 280px 底部邊距
+- **iPhone 14 Plus/12 Pro Max** (391-428px): 270px 底部邊距  
+- **iPhone 12/13/14** (376-390px): 250px 底部邊距
+- **保持控制按鈕位置**: `bottom: 10-12px` 確保觸控便利性
+
+#### 響應式設計架構改進
+- **完整覆蓋**: 320px-480px 所有手機設備尺寸
+- **漸進式邊距**: 根據螢幕大小調整 Canvas 底部間距
+- **觸控優化**: 維持 44px 最小觸控區域標準
+- **視覺一致性**: 保持聖誕燈邊框與 Canvas 對齊
+
+#### 用戶體驗提升
+- **零重疊**: 所有 iPhone 機型的遊戲內容與控制按鈕完全分離
+- **舒適操作**: 充足的緩衝空間確保誤觸防護
+- **視覺平衡**: Canvas 居中顯示，上下間距協調
+- **分享功能**: 修復後的佈局確保分享截圖清晰完整
+
 ### 2025-11-21 - 倒數系統優化升級
 
 #### 使用者體驗增強
