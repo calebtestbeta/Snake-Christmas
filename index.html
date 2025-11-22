@@ -358,18 +358,17 @@
             z-index: 1;
         }
         
-        /* 遊戲畫布特定樣式 - 為增強聖誕燈預留更多空間 */
+        /* 遊戲畫布特定樣式 - 簡化定位無聖誕燈干擾 */
         canvas:not(#nutritionChart) {
-            margin: 80px auto 130px auto;  /* 大幅增加邊距為聖誕燈預留空間 */
-            box-shadow: none;  /* 移除陰影避免遮擋聖誕燈 */
+            margin: 80px auto 130px auto;  /* 保持合理邊距 */
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);  /* 恢復陰影增強視覺層次 */
             border-radius: 15px;
-            background: rgba(15, 15, 35, 0.02);  /* 更低的背景透明度讓燈泡更突出 */
+            background: rgba(15, 15, 35, 0.05);  /* 輕微背景增強可見性 */
             backdrop-filter: blur(1px);
             image-rendering: pixelated;
             image-rendering: -moz-crisp-edges;
             image-rendering: crisp-edges;
-            padding: 40px;  /* 大幅增加內部padding為燈泡留更多空間 */
-            overflow: visible;  /* 允許燈泡超出畫布邊界 */
+            /* 移除padding避免內容延伸出邊界 */
         }
 
         #over {
@@ -1175,8 +1174,8 @@
         @media (max-width: 320px) {
             canvas:not(#nutritionChart) {
                 margin: 70px auto 180px auto;  /* 平衡的定位設定 */
-                max-width: calc(100vw - 100px);  /* 為聖誕燈預留更多空間 */
-                padding: 15px;  /* 減少為原值的50% */
+                max-width: calc(100vw - 20px);  /* 簡化邊距計算 */
+                /* 移除padding */
             }
             
             #pad {
@@ -1217,8 +1216,8 @@
         @media (max-width: 375px) and (min-width: 321px) {
             canvas:not(#nutritionChart) {
                 margin: 75px auto 190px auto;  /* 平衡的定位設定 */
-                max-width: calc(100vw - 90px);  /* 為聖誕燈預留更多空間 */
-                padding: 18px;  /* 減少為原值的50% */
+                max-width: calc(100vw - 20px);  /* 簡化邊距計算 */
+                /* 移除padding */
             }
             
             #pad {
@@ -1254,8 +1253,8 @@
         @media (max-width: 390px) and (min-width: 376px) {
             canvas:not(#nutritionChart) {
                 margin: 80px auto 195px auto;  /* 平衡的定位設定 */
-                max-width: calc(100vw - 80px);  /* 為聖誕燈預留空間 */
-                padding: 18px;  /* 減少為原值的50% */
+                max-width: calc(100vw - 20px);  /* 簡化邊距計算 */
+                /* 移除padding */
             }
             
             #pad {
@@ -1269,8 +1268,8 @@
         @media (max-width: 428px) and (min-width: 391px) {
             canvas:not(#nutritionChart) {
                 margin: 85px auto 200px auto;  /* 平衡的定位設定 */
-                max-width: calc(100vw - 70px);
-                padding: 15px;  /* 減少為原值的50%，關鍵修復 */
+                max-width: calc(100vw - 20px);  /* 簡化邊距計算 */
+                /* 移除padding */
             }
             
             #pad {
@@ -1284,8 +1283,8 @@
         @media (max-width: 480px) and (min-width: 429px) {
             canvas:not(#nutritionChart) {
                 margin: 90px auto 205px auto;  /* 平衡的定位設定 */
-                max-width: calc(100vw - 60px);
-                padding: 20px;  /* 減少為原值的50% */
+                max-width: calc(100vw - 20px);  /* 簡化邊距計算 */
+                /* 移除padding */
             }
             
             #pad {

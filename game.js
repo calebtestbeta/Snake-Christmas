@@ -1628,8 +1628,8 @@ function draw() {
         updateBethlehemStar();
         drawBethlehemStar();
 
-        // 聖誕燈彩色邊框（始終顯示）
-        drawChristmasLightBorder();
+        // 聖誕燈彩色邊框（暫時停用以修復定位問題）
+        // drawChristmasLightBorder();
 
         // 僅在前10幀顯示調試信息
         if (frameCount <= 10) {
