@@ -332,21 +332,21 @@ function calculateOptimalCanvasSize() {
     let horizontalPadding, verticalReduction, maxCellSize, minCellSize;
 
     if (isMobile) {
-        // 手機：極小邊距，最大化利用螢幕空間
+        // 手機：預留更多垂直空間給控制按鈕和 HUD
         horizontalPadding = windowWidth <= 375 ? 8 : 12; // iPhone SE使用8px，其他手機12px
-        verticalReduction = windowHeight <= 667 ? 240 : 260; // 大幅減少垂直空間占用
+        verticalReduction = windowHeight <= 667 ? 320 : 340; // 增加垂直空間預留，避免遊戲內容與控制按鈕重疊
         maxCellSize = 35;  // 提高最大cell大小以改善可讀性
         minCellSize = 16;  // 提高最小cell大小確保更好的可讀性
     } else if (isTablet) {
-        // 平板：適中邊距
+        // 平板：適中邊距，預留控制按鈕空間
         horizontalPadding = 20;
-        verticalReduction = 180;
+        verticalReduction = 260; // 增加垂直空間預留
         maxCellSize = 32;
         minCellSize = 16;
     } else {
-        // 桌面：標準邊距
+        // 桌面：標準邊距，預留控制按鈕空間
         horizontalPadding = GAME_CONFIG.CANVAS_PADDING;
-        verticalReduction = 160;
+        verticalReduction = 240; // 增加垂直空間預留
         maxCellSize = 28;
         minCellSize = 18;
     }
@@ -2846,27 +2846,27 @@ function createShareOverlay() {
     const overlay = document.createElement('div');
     overlay.id = 'share-overlay';
     
-    // 定位在遊戲 Canvas 底部區域，避免與控制按鈕重疊
+    // 定位在 Canvas 和控制按鈕之間的空間
     overlay.style.cssText = `
         position: fixed;
-        bottom: 160px;
+        bottom: 200px;
         left: 50%;
         transform: translateX(-50%);
         background: rgba(15, 15, 35, 0.9);
         color: #FFD700;
-        padding: 12px 20px;
-        border-radius: 12px;
+        padding: 16px 24px;
+        border-radius: 16px;
         text-align: center;
         font-family: inherit;
         font-weight: bold;
-        border: 2px solid rgba(255, 215, 0, 0.6);
-        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+        border: 3px solid rgba(255, 215, 0, 0.6);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
         z-index: 1002;
         pointer-events: none;
-        backdrop-filter: blur(6px);
+        backdrop-filter: blur(8px);
         text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
-        min-width: 260px;
-        max-width: 85vw;
+        min-width: 280px;
+        max-width: 90vw;
     `;
 
     let overlayHTML = `
@@ -2909,13 +2909,14 @@ async function captureGameResult() {
         // 等待元素渲染
         await new Promise(resolve => setTimeout(resolve, 100));
 
-        // 計算遊戲區域範圍，確保包含所有視覺效果但排除控制按鈕
+        // 計算遊戲區域範圍，包含所有視覺效果和控制按鈕
         const gameCanvasRect = gameCanvas.getBoundingClientRect();
         const hudElement = document.getElementById('hud');
+        const padElement = document.getElementById('pad');
         
-        // 計算截圖範圍：從 HUD 頂部到 Canvas 底部（排除控制按鈕區域）
+        // 計算截圖範圍：從 HUD 頂部到控制按鈕底部
         const topBound = hudElement ? hudElement.getBoundingClientRect().top : gameCanvasRect.top - 80;
-        const bottomBound = gameCanvasRect.bottom + 40; // 僅包含 Canvas 及其邊距，不包含控制按鈕
+        const bottomBound = padElement ? padElement.getBoundingClientRect().bottom : gameCanvasRect.bottom + 130;
         
         const captureWidth = window.innerWidth;
         const captureHeight = bottomBound - topBound;
@@ -2937,16 +2938,14 @@ async function captureGameResult() {
             y: Math.max(0, topBound),
             width: captureWidth,
             height: captureHeight,
-            // 排除不需要的彈窗元素和控制按鈕
+            // 排除不需要的彈窗元素
             ignoreElements: (element) => {
                 return element.id === 'over' || 
                        element.id === 'start-screen' || 
                        element.id === 'help-screen' ||
                        element.id === 'countdown-screen' ||
-                       element.id === 'pad' ||  // 排除控制按鈕容器
                        element.classList.contains('modal') ||
-                       element.classList.contains('popup') ||
-                       (element.tagName === 'BUTTON' && element.closest('#pad')); // 排除 pad 內的按鈕
+                       element.classList.contains('popup');
             }
         });
         
