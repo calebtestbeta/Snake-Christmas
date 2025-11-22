@@ -257,12 +257,35 @@
             justify-content: center;
             font-weight: bold;
             position: relative;
-            overflow: hidden;
+            overflow: visible; /* 改為 visible 讓偽元素可見 */
             
             /* 增加觸控區域 - iOS 建議至少 44px */
             min-width: 44px;
             min-height: 44px;
         }
+
+        /* 擴展觸控區域的透明偽元素 */
+        #pad button::after {
+            content: '';
+            position: absolute;
+            top: -15px;    /* 向上擴展 15px */
+            left: -15px;   /* 向左擴展 15px */
+            right: -15px;  /* 向右擴展 15px */
+            bottom: -15px; /* 向下擴展 15px */
+            background: transparent;
+            border-radius: 50%;
+            pointer-events: auto;
+            z-index: -1; /* 放在按鈕視覺元素後面 */
+        }
+        
+        /* 調試模式：顯示觸控區域（開發時使用）*/
+        /* 取消註解下面的代碼來查看擴展的觸控區域 */
+        /*
+        #pad button::after {
+            background: rgba(255, 0, 0, 0.2) !important;
+            border: 1px dashed red;
+        }
+        */
 
         #pad button::before {
             content: '';
@@ -273,6 +296,8 @@
             height: 100%;
             background: linear-gradient(90deg, transparent, rgba(255, 215, 0, 0.2), transparent);
             transition: left 0.5s ease;
+            z-index: 1; /* 確保光效在觸控區域上方 */
+            pointer-events: none; /* 光效不攔截觸控事件 */
         }
 
         #pad button:hover::before {
@@ -300,6 +325,14 @@
             #pad button {
                 /* 確保在 iOS 上有足夠的觸控區域 */
                 padding: 8px;
+            }
+            
+            /* iOS 上擴大觸控區域 */
+            #pad button::after {
+                top: -20px;    /* iOS 上更大的觸控區域 */
+                left: -20px;   
+                right: -20px;  
+                bottom: -20px; 
             }
             
             #pad button:active,
@@ -1616,6 +1649,14 @@
 
             #pad button {
                 font-size: 22px;
+            }
+            
+            /* 手機上進一步擴大觸控區域 */
+            #pad button::after {
+                top: -18px;    
+                left: -18px;   
+                right: -18px;  
+                bottom: -18px; 
             }
 
             /* Canvas設定在上面的特定media query中處理 */
