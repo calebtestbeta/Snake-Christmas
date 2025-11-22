@@ -2306,6 +2306,7 @@ function gameOver() {
         setTimeout(() => {
             try {
                 renderNutritionChart();
+                setupShareButton(); // 設置分享按鈕事件監聽器
             } catch (error) {
                 console.error('圖表渲染失敗:', error);
             }
@@ -2776,6 +2777,355 @@ function debugVirtualButtons() {
 
 // 暴露到全域供調試使用
 window.debugVirtualButtons = debugVirtualButtons;
+
+// ===== 📤 分享功能系統 =====
+
+// 遊戲結果截圖生成功能
+async function captureGameResult() {
+    const cardElement = document.getElementById('card');
+    if (!cardElement) {
+        throw new Error('找不到遊戲結果卡片元素');
+    }
+
+    try {
+        console.log('🔄 開始生成遊戲結果截圖...');
+        
+        const canvas = await html2canvas(cardElement, {
+            backgroundColor: '#ffffff',
+            scale: 2, // 高解析度截圖
+            useCORS: true,
+            allowTaint: false,
+            logging: false, // 關閉詳細日誌
+            width: cardElement.offsetWidth,
+            height: cardElement.offsetHeight,
+            scrollX: 0,
+            scrollY: 0,
+            windowWidth: window.innerWidth,
+            windowHeight: window.innerHeight
+        });
+        
+        console.log('✅ 截圖生成成功');
+        return canvas;
+    } catch (error) {
+        console.error('❌ 截圖生成失敗:', error);
+        throw error;
+    }
+}
+
+// 生成分享文字內容
+function generateShareText() {
+    const totalChars = ate.length;
+    const completedCount = completedPhrases.length;
+    const totalBonus = completedPhrases.reduce((sum, phrase) => {
+        const phraseData = ITEMS.phrases[phrase];
+        return sum + (phraseData ? phraseData.bonus : 0);
+    }, 0);
+    
+    let shareText = `🎄 聖誕貪食蛇遊戲成果分享 🎄\n\n`;
+    shareText += `📝 收集字符：${totalChars} 個\n`;
+    shareText += `🎯 完成詞句：${completedCount} 個\n`;
+    shareText += `⭐ 總獎勵分數：${totalBonus} 分\n\n`;
+    
+    if (completedPhrases.length > 0) {
+        shareText += `✨ 完成的聖誕祝福詞句：\n`;
+        
+        // 按字數分類顯示
+        const phrases5 = completedPhrases.filter(p => p.length === 5);
+        const phrases4 = completedPhrases.filter(p => p.length === 4);
+        const phrases3 = completedPhrases.filter(p => p.length === 3);
+        const phrases2 = completedPhrases.filter(p => p.length === 2);
+        
+        if (phrases5.length > 0) {
+            shareText += `🌟 傳奇級：${phrases5.join('、')}\n`;
+        }
+        if (phrases4.length > 0) {
+            shareText += `🏆 特等獎：${phrases4.join('、')}\n`;
+        }
+        if (phrases3.length > 0) {
+            shareText += `🥈 優等獎：${phrases3.join('、')}\n`;
+        }
+        if (phrases2.length > 0) {
+            shareText += `🥉 參加獎：${phrases2.join('、')}\n`;
+        }
+        
+        shareText += `\n`;
+    }
+    
+    shareText += `🎮 一起來挑戰聖誕貪食蛇，收集聖誕祝福吧！\n`;
+    shareText += `🔗 ${window.location.href}`;
+    
+    return shareText;
+}
+
+// 主要分享功能
+async function shareGameResult() {
+    // 顯示載入狀態
+    const shareButton = document.getElementById('share-result-button');
+    const originalContent = shareButton.innerHTML;
+    shareButton.innerHTML = '<span class="button-icon">⏳</span>準備分享中...';
+    shareButton.disabled = true;
+    
+    try {
+        console.log('🚀 開始分享遊戲結果...');
+        
+        // 檢查 Web Share API 支援
+        if (navigator.share) {
+            console.log('📱 偵測到 Web Share API 支援');
+            
+            // 嘗試圖片分享
+            try {
+                const canvas = await captureGameResult();
+                
+                // 轉換為 Blob
+                canvas.toBlob(async (blob) => {
+                    if (!blob) {
+                        throw new Error('圖片生成失敗');
+                    }
+                    
+                    const file = new File([blob], 'christmas-snake-result.png', {
+                        type: 'image/png'
+                    });
+                    
+                    // 檢查是否支援檔案分享
+                    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                        console.log('📤 使用圖片分享模式');
+                        await navigator.share({
+                            title: '🎄 聖誕貪食蛇成果分享',
+                            text: generateShareText(),
+                            files: [file]
+                        });
+                        console.log('✅ 圖片分享成功');
+                    } else {
+                        // 不支援檔案分享，使用文字分享
+                        console.log('📝 降級為文字分享模式');
+                        await shareAsText();
+                    }
+                }, 'image/png', 0.9);
+                
+            } catch (error) {
+                console.warn('⚠️ 圖片分享失敗，降級為文字分享:', error);
+                await shareAsText();
+            }
+            
+        } else {
+            console.log('💻 Web Share API 不支援，使用備用方案');
+            await fallbackShare();
+        }
+        
+    } catch (error) {
+        console.error('❌ 分享功能發生錯誤:', error);
+        showShareError('分享功能暫時不可用，請稍後再試');
+    } finally {
+        // 恢復按鈕狀態
+        shareButton.innerHTML = originalContent;
+        shareButton.disabled = false;
+    }
+}
+
+// 文字分享功能
+async function shareAsText() {
+    const shareText = generateShareText();
+    
+    try {
+        await navigator.share({
+            title: '🎄 聖誕貪食蛇成果',
+            text: shareText
+        });
+        console.log('✅ 文字分享成功');
+    } catch (error) {
+        if (error.name === 'AbortError') {
+            console.log('ℹ️ 用戶取消了分享');
+        } else {
+            console.error('❌ 文字分享失敗:', error);
+            throw error;
+        }
+    }
+}
+
+// 備用分享方案（不支援 Web Share API 的瀏覽器）
+async function fallbackShare() {
+    const shareText = generateShareText();
+    
+    try {
+        // 嘗試複製到剪貼板
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            await navigator.clipboard.writeText(shareText);
+            showCopyNotification('🎉 遊戲成果已複製到剪貼板！\n\n你可以手動貼上到社群媒體分享給朋友們。');
+        } else {
+            // 更舊的瀏覽器：顯示文字讓用戶手動複製
+            showShareText(shareText);
+        }
+    } catch (error) {
+        console.error('❌ 備用分享方案失敗:', error);
+        showShareText(shareText);
+    }
+}
+
+// 顯示複製成功通知
+function showCopyNotification(message) {
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: rgba(34, 139, 34, 0.95);
+        color: white;
+        padding: 20px 25px;
+        border-radius: 12px;
+        font-size: 1em;
+        font-weight: bold;
+        text-align: center;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        pointer-events: none;
+        z-index: 10000;
+        animation: fadeInOut 3s ease-out forwards;
+        max-width: 90vw;
+        word-wrap: break-word;
+        white-space: pre-line;
+    `;
+    notification.textContent = message;
+    
+    // 添加動畫樣式
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes fadeInOut {
+            0% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+            15% { opacity: 1; transform: translate(-50%, -50%) scale(1.05); }
+            85% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+            100% { opacity: 0; transform: translate(-50%, -50%) scale(0.9); }
+        }
+    `;
+    document.head.appendChild(style);
+    
+    document.body.appendChild(notification);
+    
+    // 3秒後移除通知
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.parentNode.removeChild(notification);
+        }
+        if (style.parentNode) {
+            style.parentNode.removeChild(style);
+        }
+    }, 3000);
+}
+
+// 顯示分享文字讓用戶手動複製
+function showShareText(shareText) {
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.7);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+        padding: 20px;
+    `;
+    
+    const content = document.createElement('div');
+    content.style.cssText = `
+        background: white;
+        border-radius: 15px;
+        padding: 25px;
+        max-width: 90vw;
+        max-height: 80vh;
+        overflow-y: auto;
+        text-align: center;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    `;
+    
+    content.innerHTML = `
+        <h3 style="margin: 0 0 15px 0; color: #333;">📤 分享內容</h3>
+        <p style="margin-bottom: 15px; color: #666;">請手動複製以下內容到你想分享的地方：</p>
+        <textarea readonly style="
+            width: 100%;
+            height: 200px;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-family: inherit;
+            resize: none;
+            margin-bottom: 15px;
+        ">${shareText}</textarea>
+        <button onclick="this.parentElement.parentElement.remove()" style="
+            background: linear-gradient(45deg, #B8860B, #DAA520);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+        ">關閉</button>
+    `;
+    
+    // 自動選中文字內容
+    setTimeout(() => {
+        const textarea = content.querySelector('textarea');
+        if (textarea) {
+            textarea.select();
+            textarea.focus();
+        }
+    }, 100);
+    
+    modal.appendChild(content);
+    document.body.appendChild(modal);
+    
+    // 點擊背景關閉
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            modal.remove();
+        }
+    });
+}
+
+// 顯示分享錯誤
+function showShareError(message) {
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: rgba(220, 53, 69, 0.95);
+        color: white;
+        padding: 15px 20px;
+        border-radius: 10px;
+        font-size: 1em;
+        font-weight: bold;
+        text-align: center;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        pointer-events: none;
+        z-index: 10000;
+        animation: fadeInOut 2.5s ease-out forwards;
+        max-width: 90vw;
+        word-wrap: break-word;
+    `;
+    notification.textContent = message;
+    
+    document.body.appendChild(notification);
+    
+    // 2.5秒後移除通知
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.parentNode.removeChild(notification);
+        } 
+    }, 2500);
+}
+
+// 設置分享按鈕事件監聽器
+function setupShareButton() {
+    const shareButton = document.getElementById('share-result-button');
+    if (shareButton) {
+        shareButton.addEventListener('click', shareGameResult);
+        console.log('✅ 分享按鈕事件監聽器已設置');
+    } else {
+        console.warn('⚠️ 找不到分享按鈕元素');
+    }
+}
 
 // 移除舊的背景顏色設定函數 - 現在由 CSS 聖誕夜空漸層控制
 
