@@ -2778,35 +2778,189 @@ function debugVirtualButtons() {
 // 暴露到全域供調試使用
 window.debugVirtualButtons = debugVirtualButtons;
 
-// ===== 📤 分享功能系統 =====
+// 調試函數：測試分享功能（不需要完整遊戲）
+window.testShareFunction = async function() {
+    console.log('🧪 開始測試分享功能...');
+    
+    // 模擬遊戲數據
+    if (!ate || ate.length === 0) {
+        ate = ['聖', '誕', '快', '樂', '耶', '穌', '愛', '我'];
+        completedPhrases = ['聖誕快樂', '耶穌愛我'];
+        console.log('📊 使用模擬遊戲數據進行測試');
+    }
+    
+    try {
+        // 測試截圖功能
+        const canvas = await captureGameResult();
+        console.log('✅ 截圖生成成功:', canvas.width, 'x', canvas.height);
+        
+        // 測試分享文字生成
+        const shareText = generateShareText();
+        console.log('✅ 分享文字生成成功:', shareText.substring(0, 100) + '...');
+        
+        // 顯示結果預覽
+        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png', 0.9));
+        const url = URL.createObjectURL(blob);
+        
+        console.log('🖼️ 截圖預覽 URL:', url);
+        console.log('💡 在瀏覽器中打開此 URL 查看截圖效果');
+        
+        return { canvas, shareText, previewUrl: url };
+    } catch (error) {
+        console.error('❌ 分享功能測試失敗:', error);
+        throw error;
+    }
+};
 
-// 遊戲結果截圖生成功能
-async function captureGameResult() {
-    const cardElement = document.getElementById('card');
-    if (!cardElement) {
-        throw new Error('找不到遊戲結果卡片元素');
+// ===== 📤 分享功能系統 (v2.0 - 遊戲畫布分享版) =====
+//
+// 功能概述：
+// 1. 截圖遊戲畫布（包含聖誕夜空背景、聖誕燈、伯利恆之星等視覺效果）
+// 2. 動態添加精簡的成果統計文字疊加層
+// 3. 生成高解析度分享圖片，適合社群媒體分享
+// 4. 支援多平台分享：Web Share API + 後備方案
+//
+// 技術特色：
+// - 保留所有 CSS 聖誕視覺效果（透明背景截圖）
+// - 精確計算截圖範圍（HUD 到控制按鈕）
+// - 智能文字疊加定位，確保在複雜背景上清晰可讀
+// - 完整的錯誤處理和資源清理機制
+
+// 創建分享用的文字疊加層
+function createShareOverlay() {
+    // 安全獲取遊戲統計數據
+    const totalChars = ate ? ate.length : 0;
+    const completedCount = completedPhrases ? completedPhrases.length : 0;
+    const totalBonus = completedPhrases ? completedPhrases.reduce((sum, phrase) => {
+        const phraseData = ITEMS.phrases ? ITEMS.phrases[phrase] : null;
+        return sum + (phraseData ? phraseData.bonus : 0);
+    }, 0) : 0;
+
+    // 找出最高成就詞句
+    let topAchievement = '';
+    if (completedPhrases && completedPhrases.length > 0) {
+        const sortedPhrases = [...completedPhrases].sort((a, b) => b.length - a.length);
+        topAchievement = sortedPhrases[0];
     }
 
+    const overlay = document.createElement('div');
+    overlay.id = 'share-overlay';
+    overlay.style.cssText = `
+        position: fixed;
+        bottom: 140px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(15, 15, 35, 0.9);
+        color: #FFD700;
+        padding: 16px 24px;
+        border-radius: 16px;
+        text-align: center;
+        font-family: inherit;
+        font-weight: bold;
+        border: 3px solid rgba(255, 215, 0, 0.6);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+        z-index: 1002;
+        pointer-events: none;
+        backdrop-filter: blur(8px);
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+        min-width: 280px;
+        max-width: 90vw;
+    `;
+
+    let overlayHTML = `
+        <div style="font-size: 1.2em; margin-bottom: 8px; color: #FFFFE0;">
+            🎄 聖誕貪食蛇成果 🎄
+        </div>
+        <div style="font-size: 1em; margin-bottom: 6px;">
+            📝 ${totalChars}字 · 🎯 ${completedCount}詞句 · ⭐ ${totalBonus}分
+        </div>
+    `;
+
+    if (topAchievement) {
+        const achievementIcon = topAchievement.length >= 4 ? '🌟' : topAchievement.length === 3 ? '⭐' : '💫';
+        overlayHTML += `
+            <div style="font-size: 0.9em; color: #FFD700; margin-top: 4px;">
+                ${achievementIcon} ${topAchievement}
+            </div>
+        `;
+    }
+
+    overlay.innerHTML = overlayHTML;
+    return overlay;
+}
+
+// 遊戲結果截圖生成功能 - 截圖遊戲畫布
+async function captureGameResult() {
     try {
-        console.log('🔄 開始生成遊戲結果截圖...');
+        console.log('🔄 開始生成遊戲畫布截圖...');
         
-        const canvas = await html2canvas(cardElement, {
-            backgroundColor: '#ffffff',
+        // 找到遊戲畫布
+        const gameCanvas = document.querySelector('canvas:not(#nutritionChart)');
+        if (!gameCanvas) {
+            throw new Error('找不到遊戲畫布元素');
+        }
+
+        // 創建文字疊加層
+        const overlay = createShareOverlay();
+        document.body.appendChild(overlay);
+
+        // 等待元素渲染
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        // 計算遊戲區域範圍，確保包含所有視覺效果
+        const gameCanvasRect = gameCanvas.getBoundingClientRect();
+        const hudElement = document.getElementById('hud');
+        const padElement = document.getElementById('pad');
+        
+        // 計算截圖範圍：從 HUD 頂部到控制按鈕底部
+        const topBound = hudElement ? hudElement.getBoundingClientRect().top : gameCanvasRect.top - 80;
+        const bottomBound = padElement ? padElement.getBoundingClientRect().bottom : gameCanvasRect.bottom + 130;
+        
+        const captureWidth = window.innerWidth;
+        const captureHeight = bottomBound - topBound;
+        
+        console.log(`📏 截圖範圍: ${captureWidth}x${captureHeight}, 從 Y=${topBound} 到 Y=${bottomBound}`);
+
+        // 截圖整個遊戲視窗，包含所有聖誕視覺效果
+        const canvas = await html2canvas(document.body, {
+            backgroundColor: 'transparent', // 保留 CSS 聖誕夜空背景
             scale: 2, // 高解析度截圖
             useCORS: true,
             allowTaint: false,
-            logging: false, // 關閉詳細日誌
-            width: cardElement.offsetWidth,
-            height: cardElement.offsetHeight,
+            logging: false,
             scrollX: 0,
             scrollY: 0,
             windowWidth: window.innerWidth,
-            windowHeight: window.innerHeight
+            windowHeight: window.innerHeight,
+            x: 0,
+            y: Math.max(0, topBound),
+            width: captureWidth,
+            height: captureHeight,
+            // 排除不需要的彈窗元素
+            ignoreElements: (element) => {
+                return element.id === 'over' || 
+                       element.id === 'start-screen' || 
+                       element.id === 'help-screen' ||
+                       element.id === 'countdown-screen' ||
+                       element.classList.contains('modal') ||
+                       element.classList.contains('popup');
+            }
         });
         
-        console.log('✅ 截圖生成成功');
+        // 清理疊加層
+        if (overlay.parentNode) {
+            overlay.parentNode.removeChild(overlay);
+        }
+        
+        console.log('✅ 遊戲畫布截圖生成成功');
         return canvas;
     } catch (error) {
+        // 確保清理疊加層
+        const overlay = document.getElementById('share-overlay');
+        if (overlay && overlay.parentNode) {
+            overlay.parentNode.removeChild(overlay);
+        }
+        
         console.error('❌ 截圖生成失敗:', error);
         throw error;
     }
@@ -2814,26 +2968,27 @@ async function captureGameResult() {
 
 // 生成分享文字內容
 function generateShareText() {
-    const totalChars = ate.length;
-    const completedCount = completedPhrases.length;
-    const totalBonus = completedPhrases.reduce((sum, phrase) => {
-        const phraseData = ITEMS.phrases[phrase];
+    // 安全獲取遊戲數據
+    const totalChars = ate ? ate.length : 0;
+    const completedCount = completedPhrases ? completedPhrases.length : 0;
+    const totalBonus = completedPhrases ? completedPhrases.reduce((sum, phrase) => {
+        const phraseData = ITEMS.phrases ? ITEMS.phrases[phrase] : null;
         return sum + (phraseData ? phraseData.bonus : 0);
-    }, 0);
+    }, 0) : 0;
     
     let shareText = `🎄 聖誕貪食蛇遊戲成果分享 🎄\n\n`;
     shareText += `📝 收集字符：${totalChars} 個\n`;
     shareText += `🎯 完成詞句：${completedCount} 個\n`;
     shareText += `⭐ 總獎勵分數：${totalBonus} 分\n\n`;
     
-    if (completedPhrases.length > 0) {
+    if (completedPhrases && completedPhrases.length > 0) {
         shareText += `✨ 完成的聖誕祝福詞句：\n`;
         
         // 按字數分類顯示
-        const phrases5 = completedPhrases.filter(p => p.length === 5);
-        const phrases4 = completedPhrases.filter(p => p.length === 4);
-        const phrases3 = completedPhrases.filter(p => p.length === 3);
-        const phrases2 = completedPhrases.filter(p => p.length === 2);
+        const phrases5 = completedPhrases.filter(p => p && p.length === 5);
+        const phrases4 = completedPhrases.filter(p => p && p.length === 4);
+        const phrases3 = completedPhrases.filter(p => p && p.length === 3);
+        const phrases2 = completedPhrases.filter(p => p && p.length === 2);
         
         if (phrases5.length > 0) {
             shareText += `🌟 傳奇級：${phrases5.join('、')}\n`;
