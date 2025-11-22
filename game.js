@@ -988,21 +988,21 @@ function drawChristmasLightBorder() {
     const gameContentWidth = cols * cell;   // 遊戲網格寬度
     const gameContentHeight = rows * cell;  // 遊戲網格高度
     
-    // 智能邊界安全區域計算 - 基於設備類型和控制按鈕位置
+    // 智能邊界安全區域計算 - 基於實際控制按鈕尺寸和設備類型
     let controlButtonSafeZone = 0;
     if (isMobile) {
-        // 手機設備：需要為控制按鈕預留更多空間
+        // 手機設備：使用實際像素值預留控制按鈕空間
         if (windowWidth <= 320) {
-            controlButtonSafeZone = cell * 1.5;  // iPhone SE: 預留 1.5 個 cell 的空間
+            controlButtonSafeZone = 90;  // iPhone SE: 預留 90px 的空間
         } else if (windowWidth <= 428) {
-            controlButtonSafeZone = cell * 1.2;  // iPhone 13 Pro Max 等: 預留 1.2 個 cell 的空間
+            controlButtonSafeZone = 100; // iPhone 13 Pro Max 等: 預留 100px 的空間
         } else {
-            controlButtonSafeZone = cell * 1.0;  // 其他手機: 預留 1 個 cell 的空間
+            controlButtonSafeZone = 80;  // 其他手機: 預留 80px 的空間
         }
     } else if (isTablet) {
-        controlButtonSafeZone = cell * 0.8;      // 平板: 較小的安全區域
+        controlButtonSafeZone = 60;      // 平板: 預留 60px 安全區域
     } else {
-        controlButtonSafeZone = cell * 0.5;      // 桌面: 最小安全區域
+        controlButtonSafeZone = 40;      // 桌面: 預留 40px 安全區域
     }
     
     // 聖誕燈顏色配置
@@ -1062,7 +1062,7 @@ function drawChristmasLightBorder() {
     // 下邊 - 智能安全區域定位（避免與控制按鈕重疊）
     for (let i = 0; i < topBottomLights; i++) {
         const x = (i + 0.5) * spacing;
-        const y = gameContentHeight - Math.max(lightSize / 2 + 1, controlButtonSafeZone); // 預留控制按鈕安全空間
+        const y = gameContentHeight - controlButtonSafeZone; // 直接使用安全區域偏移
         
         // 下邊燈泡顏色輪替：與上邊不同步
         const colorCycleSpeed = 0.6; // 稍快的顏色變化
@@ -1085,8 +1085,8 @@ function drawChristmasLightBorder() {
     
     // 左邊 - 智能安全區域定位
     for (let i = 0; i < leftRightLights; i++) {
-        const x = Math.max(lightSize / 2 + 1, controlButtonSafeZone / 4); // 考慮安全區域
-        const y = Math.max(controlButtonSafeZone / 4, (i + 0.5) * spacing);
+        const x = lightSize / 2 + 5; // 簡單的左邊邊距
+        const y = (i + 0.5) * spacing;
         
         // 左邊燈泡顏色輪替：垂直方向的彩虹效果
         const colorCycleSpeed = 0.4; // 慢速顏色變化
@@ -1109,8 +1109,8 @@ function drawChristmasLightBorder() {
     
     // 右邊 - 智能安全區域定位
     for (let i = 0; i < leftRightLights; i++) {
-        const x = gameContentWidth - Math.max(lightSize / 2 + 1, controlButtonSafeZone / 4); // 考慮安全區域
-        const y = Math.max(controlButtonSafeZone / 4, (i + 0.5) * spacing);
+        const x = gameContentWidth - lightSize / 2 - 5; // 簡單的右邊邊距
+        const y = (i + 0.5) * spacing;
         
         // 右邊燈泡顏色輪替：與左邊反向的彩虹效果
         const colorCycleSpeed = 0.7; // 快速顏色變化
