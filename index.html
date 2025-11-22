@@ -358,17 +358,18 @@
             z-index: 1;
         }
         
-        /* 遊戲畫布特定樣式 - 聖誕燈限制在遊戲內容區域 */
+        /* 遊戲畫布特定樣式 - 為增強聖誕燈預留更多空間 */
         canvas:not(#nutritionChart) {
-            margin: 80px auto 130px auto;  /* 保持邊距為 UI 元素預留空間 */
-            box-shadow: none;  /* 移除陰影保持簡潔 */
+            margin: 80px auto 130px auto;  /* 大幅增加邊距為聖誕燈預留空間 */
+            box-shadow: none;  /* 移除陰影避免遮擋聖誕燈 */
             border-radius: 15px;
-            background: rgba(15, 15, 35, 0.02);  /* 低透明度背景 */
+            background: rgba(15, 15, 35, 0.02);  /* 更低的背景透明度讓燈泡更突出 */
             backdrop-filter: blur(1px);
             image-rendering: pixelated;
             image-rendering: -moz-crisp-edges;
             image-rendering: crisp-edges;
-            /* 移除 padding 和 overflow 防止聖誕燈延伸到控制按鈕區域 */
+            padding: 40px;  /* 大幅增加內部padding為燈泡留更多空間 */
+            overflow: visible;  /* 允許燈泡超出畫布邊界 */
         }
 
         #over {
