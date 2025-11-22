@@ -13,19 +13,23 @@ window.ITEMS = {
         // ❤️ 愛的分享 (粉紅系)
         "分", "享", "溫", "暖", "人", "心",
         // 其他重要字符
-        "望", "光", "明", "澤", "用", "報", "佳", "以", "馬", "內"
+        "望", "光", "明", "澤", "用", "報", "佳", "以", "馬", "內",
+        // 特殊詞句字符
+        "我", "友", "堂", "榮", "耀", "歸", "於"
     ],
 
     // 可組成的聖誕與信仰詞句
     phrases: {
+        // 5字特殊詞句 (超高獎勵)
+        "我愛信友堂": { bonus: 150, effect: "supremeBlessing" },
+        "榮耀歸於神": { bonus: 140, effect: "divineGlory" },
+        
         // 4字經典詞句 (最高獎勵)
         "聖誕快樂": { bonus: 100, effect: "goldenGlow" },
         "耶穌愛我": { bonus: 100, effect: "stableSpeed" },
         "哈利路亞": { bonus: 120, effect: "doubleFood" },
         "以馬內利": { bonus: 110, effect: "timeExtend" },
         "平安喜樂": { bonus: 90, effect: "calmMovement" },
-        "恩典夠用": { bonus: 85, effect: "speedBoost" },
-        "榮耀歸神": { bonus: 95, effect: "lightPath" },
         
         // 3字重要詞句 (中等獎勵)
         "報佳音": { bonus: 60, effect: "speedUp" },

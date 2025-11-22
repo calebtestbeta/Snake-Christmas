@@ -1,8 +1,8 @@
 // 文字貪食蛇 - 聖誕祝福版 v1.0
 const GAME_CONFIG = {
-    // 固定網格設定
-    GRID_COLS: 18,
-    GRID_ROWS: 25,
+    // 固定網格設定 - 優化移動端可讀性
+    GRID_COLS: 16,
+    GRID_ROWS: 22,
 
     // 遊戲核心參數
     DEFAULT_SPEED: 8,
@@ -11,7 +11,7 @@ const GAME_CONFIG = {
     FRAME_RATE: 16,
 
     // 聖誕字符系統配置 - 優化任務完成機會
-    INITIAL_FOOD_COUNT: 8,                    // 增加同時出現的字符數量
+    INITIAL_FOOD_COUNT: 6,                    // 調整字符數量以適應縮小的網格
     MAX_SPAWN_ATTEMPTS: 100,
     CORE_CHRISTMAS_PROBABILITY: 0.55,         // 提高核心聖誕字符出現概率
 
@@ -70,19 +70,19 @@ let bethlehemStar = {
 const DIFFICULTY_SETTINGS = {
     easy: {
         name: '平安夜',
-        speedMultiplier: 0.7,
+        speedMultiplier: 0.6,
         description: '緩慢享受聖誕寧靜',
         color: '#4CAF50'
     },
     normal: {
         name: '聖誕晨',
-        speedMultiplier: 1.0,
+        speedMultiplier: 0.8,
         description: '正常的慶祝節奏',
         color: '#FF9800'
     },
     hard: {
         name: '報佳音',
-        speedMultiplier: 1.4,
+        speedMultiplier: 1.1,
         description: '積極傳揚喜訊的速度',
         color: '#F44336'
     }
@@ -135,6 +135,7 @@ const DOMManager = {
             startScreen: select('#start-screen'),
             countdownScreen: select('#countdown-screen'),
             countdownNumber: select('#countdown-number'),
+            directionHint: select('#direction-hint'),
             helpScreen: select('#help-screen'),
             overScreen: select('#over'),
 
@@ -312,20 +313,13 @@ function initializeCanvas() {
     // 使用透明背景讓 CSS 聖誕夜空漸層顯示
     clear();
 
+    // 使用計算後的實際網格尺寸和cell大小
     cell = canvasSize.cellSize;
-    cols = GAME_CONFIG.GRID_COLS;
-    rows = GAME_CONFIG.GRID_ROWS;
-
-    // 小螢幕設備調整遊戲網格行數，保持遊戲平衡
-    const isMobile = windowWidth <= GAME_CONFIG.MOBILE_BREAKPOINT;
-    if (isMobile && windowHeight <= 700) {
-        // 按照 Canvas 高度的同等比例調整行數
-        const heightReduction = 0.75;
-        rows = Math.floor(GAME_CONFIG.GRID_ROWS * heightReduction);
-        console.log(`小螢幕優化: 遊戲網格行數從 ${GAME_CONFIG.GRID_ROWS} 調整為 ${rows}`);
-    }
+    cols = canvasSize.gridCols;
+    rows = canvasSize.gridRows;
 
     console.log(`Canvas初始化: ${canvasSize.width}x${canvasSize.height}, Cell大小: ${cell}, 網格: ${cols}x${rows}`);
+    console.log(`Cell驗證: 每個cell為 ${cell}x${cell}px 正方形`);
 }
 
 function calculateOptimalCanvasSize() {
@@ -341,8 +335,8 @@ function calculateOptimalCanvasSize() {
         // 手機：極小邊距，最大化利用螢幕空間
         horizontalPadding = windowWidth <= 375 ? 8 : 12; // iPhone SE使用8px，其他手機12px
         verticalReduction = windowHeight <= 667 ? 240 : 260; // 大幅減少垂直空間占用
-        maxCellSize = 30;  // 進一步增加手機最大cell大小
-        minCellSize = 14;  // 提高最小cell大小確保可讀性
+        maxCellSize = 35;  // 提高最大cell大小以改善可讀性
+        minCellSize = 16;  // 提高最小cell大小確保更好的可讀性
     } else if (isTablet) {
         // 平板：適中邊距
         horizontalPadding = 20;
@@ -360,38 +354,49 @@ function calculateOptimalCanvasSize() {
     const availableWidth = windowWidth - (horizontalPadding * 2);
     const availableHeight = windowHeight - verticalReduction;
 
-    const cellSizeByWidth = Math.floor(availableWidth / GAME_CONFIG.GRID_COLS);
-    const cellSizeByHeight = Math.floor(availableHeight / GAME_CONFIG.GRID_ROWS);
+    // 確定最終網格尺寸（考慮小螢幕優化）
+    let finalGridCols = GAME_CONFIG.GRID_COLS;
+    let finalGridRows = GAME_CONFIG.GRID_ROWS;
+    
+    if (isMobile && windowHeight <= 700) {
+        // 小螢幕設備調整網格行數，保持遊戲平衡
+        const heightReduction = 0.75;
+        finalGridRows = Math.floor(GAME_CONFIG.GRID_ROWS * heightReduction);
+        console.log(`小螢幕網格優化: 行數從 ${GAME_CONFIG.GRID_ROWS} 調整為 ${finalGridRows}`);
+    }
 
-    // 智能選擇cell大小：優先考慮充分利用螢幕寬度
-    let optimalCellSize;
+    // 基於最終網格尺寸計算cell大小
+    const cellSizeByWidth = Math.floor(availableWidth / finalGridCols);
+    const cellSizeByHeight = Math.floor(availableHeight / finalGridRows);
+
+    // 智能選擇cell大小：確保正方形cell
+    let optimalCellSize = Math.min(cellSizeByWidth, cellSizeByHeight);
+    
     if (isMobile) {
-        // 手機：優先使用寬度計算，確保充分利用螢幕寬度
-        optimalCellSize = Math.min(cellSizeByWidth, cellSizeByHeight);
-        // 如果寬度能提供更大的cell但仍在合理範圍內，優先考慮寬度
+        // 手機：如果寬度能提供更大的cell但仍在合理範圍內，優先考慮寬度
         if (cellSizeByWidth <= maxCellSize && cellSizeByWidth > optimalCellSize) {
             optimalCellSize = cellSizeByWidth;
         }
-    } else {
-        // 平板和桌面：平衡寬高比
-        optimalCellSize = Math.min(cellSizeByWidth, cellSizeByHeight);
     }
 
     // 確保cell大小在合理範圍內
     optimalCellSize = Math.max(minCellSize, Math.min(maxCellSize, optimalCellSize));
 
-    const canvasWidth = optimalCellSize * GAME_CONFIG.GRID_COLS;
-    const canvasHeight = optimalCellSize * GAME_CONFIG.GRID_ROWS;
+    // 計算最終Canvas尺寸（基於實際網格和cell大小）
+    const finalCanvasWidth = optimalCellSize * finalGridCols;
+    const finalCanvasHeight = optimalCellSize * finalGridRows;
 
     const deviceType = isMobile ? 'Mobile' : isTablet ? 'Tablet' : 'Desktop';
-    const screenUtilization = ((canvasWidth / windowWidth) * 100).toFixed(1);
+    const screenUtilization = ((finalCanvasWidth / windowWidth) * 100).toFixed(1);
 
     console.log(`Canvas計算 - 設備：${deviceType}`);
     console.log(`  視窗：${windowWidth}x${windowHeight}px`);
     console.log(`  邊距：H${horizontalPadding}px, V-${verticalReduction}px`);
     console.log(`  可用空間：${availableWidth}x${availableHeight}px`);
+    console.log(`  最終網格：${finalGridCols}x${finalGridRows}`);
     console.log(`  Cell計算：寬度${cellSizeByWidth}px, 高度${cellSizeByHeight}px, 選用${optimalCellSize}px`);
-    console.log(`  最終Canvas：${canvasWidth}x${canvasHeight}px`);
+    console.log(`  最終Canvas：${finalCanvasWidth}x${finalCanvasHeight}px`);
+    console.log(`  Cell驗證：寬度比=${(finalCanvasWidth/finalGridCols).toFixed(1)}px, 高度比=${(finalCanvasHeight/finalGridRows).toFixed(1)}px`);
     console.log(`  螢幕寬度利用率：${screenUtilization}%`);
 
     // 提供設備特定的優化建議和警告
@@ -407,24 +412,23 @@ function calculateOptimalCanvasSize() {
         } else {
             console.info(`✅ 螢幕利用率良好(${screenUtilization}%)`);
         }
-    }
 
-    // 小螢幕設備 Canvas 高度優化 - 根本性解決按鈕重疊問題
-    let finalCanvasWidth = canvasWidth;
-    let finalCanvasHeight = canvasHeight;
-    
-    if (isMobile && windowHeight <= 700) {
-        // 在小螢幕上減少 Canvas 高度，為按鈕區域預留足夠空間
-        const heightReduction = 0.75; // 保留75%的高度
-        finalCanvasHeight = Math.floor(canvasHeight * heightReduction);
-        
-        console.log(`小螢幕優化: Canvas高度從 ${canvasHeight}px 調整為 ${finalCanvasHeight}px (${Math.round((1-heightReduction)*100)}% 減少)`);
+        // 驗證cell是否為正方形
+        const widthRatio = finalCanvasWidth / finalGridCols;
+        const heightRatio = finalCanvasHeight / finalGridRows;
+        if (Math.abs(widthRatio - heightRatio) < 0.1) {
+            console.info('✅ Cell為完美正方形');
+        } else {
+            console.warn(`⚠️  Cell可能拉伸: 寬${widthRatio.toFixed(1)}px vs 高${heightRatio.toFixed(1)}px`);
+        }
     }
 
     return {
         width: finalCanvasWidth,
         height: finalCanvasHeight,
-        cellSize: optimalCellSize
+        cellSize: optimalCellSize,
+        gridCols: finalGridCols,
+        gridRows: finalGridRows
     };
 }
 
@@ -721,6 +725,15 @@ function startGame() {
     // 顯示倒數視窗（此時玩家看到的就是最終遊戲佈局）
     DOMManager.show('countdownScreen');
     DOMManager.setContent('countdownNumber', 5);
+    
+    // 設置方向提示
+    const directionText = {
+        'UP': '⬆️ 向上開始',
+        'DOWN': '⬇️ 向下開始', 
+        'LEFT': '⬅️ 向左開始',
+        'RIGHT': '➡️ 向右開始'
+    };
+    DOMManager.setContent('directionHint', directionText[dir]);
 
     // GA4 事件追蹤：遊戲開始
     if (typeof gtag !== 'undefined') {
@@ -967,10 +980,9 @@ function drawChristmasLightBorder() {
         return;
     }
     
-    // 聖誕燈系統已正常運作
-    
-    const canvasWidth = cols * cell;
-    let canvasHeight = rows * cell;
+    // 使用實際的 Canvas 尺寸而非計算值
+    const canvasWidth = width;   // p5.js 提供的實際 canvas 寬度
+    const canvasHeight = height; // p5.js 提供的實際 canvas 高度
     
     // 聖誕燈現在會自動適應調整後的 Canvas 尺寸
     
@@ -1380,38 +1392,29 @@ function updatePhraseProgressDisplay() {
     });
 }
 
-// 字符詞句分析函數 - 檢查每個字符屬於哪個完成的詞句
+// 字符詞句分析函數 - 檢查每個字符屬於哪個完成的詞句（順序無關版本）
 function getCharPhraseInfo(charIndex) {
     if (!completedPhrases || completedPhrases.length === 0) {
         return null;
     }
     
-    const collectedString = ate.join('');
     const char = ate[charIndex];
     
-    // 檢查這個字符是否屬於任何完成的詞句
+    // 檢查這個字符是否屬於任何完成的詞句（使用字符計數方式）
     for (const phrase of completedPhrases) {
-        const phraseIndex = collectedString.indexOf(phrase);
-        if (phraseIndex !== -1) {
-            const phraseEndIndex = phraseIndex + phrase.length - 1;
+        // 檢查這個字符是否在詞句中
+        if (phrase.includes(char)) {
+            const phraseData = ITEMS.phrases[phrase];
             
-            // 如果當前字符在這個詞句的範圍內
-            if (charIndex >= phraseIndex && charIndex <= phraseEndIndex) {
-                const positionInPhrase = charIndex - phraseIndex;
-                const phraseData = ITEMS.phrases[phrase];
-                
-                return {
-                    phrase: phrase,
-                    positionInPhrase: positionInPhrase,
-                    isFirstChar: positionInPhrase === 0,
-                    isLastChar: positionInPhrase === phrase.length - 1,
-                    phraseLength: phrase.length,
-                    bonus: phraseData ? phraseData.bonus : 0,
-                    effect: phraseData ? phraseData.effect : null,
-                    phraseStartIndex: phraseIndex,
-                    phraseEndIndex: phraseEndIndex
-                };
-            }
+            return {
+                phrase: phrase,
+                character: char,
+                phraseLength: phrase.length,
+                bonus: phraseData ? phraseData.bonus : 0,
+                effect: phraseData ? phraseData.effect : null,
+                // 移除位置相關的屬性，因為順序已不重要
+                belongsToPhrase: true
+            };
         }
     }
     
@@ -2052,43 +2055,46 @@ function gameOver() {
         if (listEl) {
             listEl.innerHTML = '';
             
-            // 創建詞句分組映射
+            // 創建詞句分組映射（順序無關版本）
             const phraseGroups = new Map();
-            const processedIndexes = new Set();
+            const usedCharIndexes = new Set();
             
             // 按詞句長度排序 (長的優先，效果更好)
             const sortedPhrases = completedPhrases.sort((a, b) => b.length - a.length);
             
-            // 為每個完成的詞句創建分組
+            // 為每個完成的詞句創建分組（使用字符計數方式）
             sortedPhrases.forEach(phrase => {
-                const collectedString = ate.join('');
-                const phraseIndex = collectedString.indexOf(phrase);
+                const phraseData = ITEMS.phrases[phrase];
+                const phraseChars = phrase.split('');
+                const requiredCounts = {};
                 
-                if (phraseIndex !== -1) {
-                    const phraseData = ITEMS.phrases[phrase];
-                    const phraseGroup = {
-                        phrase: phrase,
-                        chars: [],
-                        startIndex: phraseIndex,
-                        endIndex: phraseIndex + phrase.length - 1,
-                        bonus: phraseData ? phraseData.bonus : 0
-                    };
-                    
-                    // 收集詞句中的字符
-                    for (let i = phraseIndex; i < phraseIndex + phrase.length; i++) {
-                        if (!processedIndexes.has(i)) {
-                            phraseGroup.chars.push({
-                                char: ate[i],
-                                index: i,
-                                positionInPhrase: i - phraseIndex
-                            });
-                            processedIndexes.add(i);
-                        }
+                // 統計詞句需要的每個字符數量
+                phraseChars.forEach(char => {
+                    requiredCounts[char] = (requiredCounts[char] || 0) + 1;
+                });
+                
+                const phraseGroup = {
+                    phrase: phrase,
+                    chars: [],
+                    bonus: phraseData ? phraseData.bonus : 0
+                };
+                
+                // 從收集的字符中找出屬於這個詞句的字符
+                const tempRequiredCounts = { ...requiredCounts };
+                ate.forEach((char, index) => {
+                    if (!usedCharIndexes.has(index) && tempRequiredCounts[char] > 0) {
+                        phraseGroup.chars.push({
+                            char: char,
+                            index: index,
+                            belongsToPhrase: phrase
+                        });
+                        tempRequiredCounts[char]--;
+                        usedCharIndexes.add(index);
                     }
-                    
-                    if (phraseGroup.chars.length > 0) {
-                        phraseGroups.set(phrase, phraseGroup);
-                    }
+                });
+                
+                if (phraseGroup.chars.length > 0) {
+                    phraseGroups.set(phrase, phraseGroup);
                 }
             });
             
@@ -2216,7 +2222,7 @@ function gameOver() {
                 });
             
             // 然後顯示未組成詞句的字符 - 添加分組顯示
-            const individualChars = ate.filter((ch, index) => !processedIndexes.has(index));
+            const individualChars = ate.filter((ch, index) => !usedCharIndexes.has(index));
             
             if (individualChars.length > 0) {
                 // 創建個別字符分組容器
@@ -2495,7 +2501,7 @@ function getResponsiveTextSize() {
     let textRatio;
     if (isMobile) {
         // 手機上使用較大的文字比例以確保可讀性
-        textRatio = cell <= 16 ? 0.8 : 0.75;
+        textRatio = cell <= 18 ? 0.85 : 0.8;
     } else if (isTablet) {
         textRatio = 0.7;
     } else {
@@ -2505,8 +2511,8 @@ function getResponsiveTextSize() {
     const baseSize = cell * textRatio;
 
     // 確保文字大小在合理範圍內
-    const minSize = isMobile ? 10 : 12;
-    const maxSize = isMobile ? 24 : 20;
+    const minSize = isMobile ? 12 : 12;
+    const maxSize = isMobile ? 28 : 20;
 
     return Math.max(minSize, Math.min(maxSize, baseSize));
 }
@@ -2951,7 +2957,7 @@ function generateFoodHelp() {
     console.log('食物說明內容已生成');
 }
 
-// 創建詞句完成特效
+// 創建詞句完成特效 - HUD 區域版本
 function createPhraseCompletionEffect(phrase) {
     // 性能優化：如果是低性能設備，使用簡化版特效
     if (window.reducedAnimations) {
@@ -2961,182 +2967,36 @@ function createPhraseCompletionEffect(phrase) {
     const effectDiv = document.createElement('div');
     effectDiv.style.cssText = `
         position: fixed;
-        top: 20%;
+        top: 50px;
         left: 50%;
         transform: translateX(-50%);
-        background: linear-gradient(45deg, rgba(255, 215, 0, 0.9), rgba(255, 255, 255, 0.8));
-        color: #013;
-        padding: 15px 25px;
-        border-radius: 20px;
-        font-size: 1.5em;
-        font-weight: bold;
-        text-align: center;
-        box-shadow: 0 10px 30px rgba(255, 215, 0, 0.4);
-        pointer-events: none;
-        z-index: 1000;
-        animation: phraseComplete 3s ease-out forwards;
-        border: 3px solid rgba(255, 215, 0, 0.6);
-    `;
-    effectDiv.innerHTML = `🎉 恭喜完成<br><span style="font-size: 1.2em; color: #8B0000;">${phrase}</span> 🎉`;
-    
-    // 添加動畫樣式
-    const style = document.createElement('style');
-    style.textContent = `
-        @keyframes phraseComplete {
-            0% { 
-                opacity: 0; 
-                transform: translateX(-50%) translateY(-50px) scale(0.5); 
-            }
-            20% { 
-                opacity: 1; 
-                transform: translateX(-50%) translateY(0px) scale(1.1); 
-            }
-            80% { 
-                opacity: 1; 
-                transform: translateX(-50%) translateY(0px) scale(1); 
-            }
-            100% { 
-                opacity: 0; 
-                transform: translateX(-50%) translateY(-30px) scale(0.8); 
-            }
-        }
-    `;
-    document.head.appendChild(style);
-    
-    document.body.appendChild(effectDiv);
-    
-    // 3秒後移除效果
-    setTimeout(() => {
-        if (effectDiv.parentNode) {
-            effectDiv.parentNode.removeChild(effectDiv);
-        }
-        if (style.parentNode) {
-            style.parentNode.removeChild(style);
-        }
-    }, 3000);
-    
-    // 添加慶祝煙火效果
-    createCelebrationFireworks();
-}
-
-// 創建慶祝煙火效果
-function createCelebrationFireworks() {
-    for (let i = 0; i < 5; i++) {
-        setTimeout(() => {
-            const firework = document.createElement('div');
-            firework.style.cssText = `
-                position: fixed;
-                top: ${Math.random() * 40 + 20}%;
-                left: ${Math.random() * 80 + 10}%;
-                font-size: 2em;
-                pointer-events: none;
-                z-index: 999;
-                animation: fireworkPop 1s ease-out forwards;
-            `;
-            firework.textContent = ['✨', '🎆', '🎇', '⭐', '💫'][Math.floor(Math.random() * 5)];
-            
-            // 添加煙火動畫
-            const style = document.createElement('style');
-            style.textContent = `
-                @keyframes fireworkPop {
-                    0% { 
-                        opacity: 0; 
-                        transform: scale(0.3); 
-                    }
-                    50% { 
-                        opacity: 1; 
-                        transform: scale(1.5); 
-                    }
-                    100% { 
-                        opacity: 0; 
-                        transform: scale(2); 
-                    }
-                }
-            `;
-            document.head.appendChild(style);
-            
-            document.body.appendChild(firework);
-            
-            // 1秒後移除
-            setTimeout(() => {
-                if (firework.parentNode) {
-                    firework.parentNode.removeChild(firework);
-                }
-                if (style.parentNode) {
-                    style.parentNode.removeChild(style);
-                }
-            }, 1000);
-        }, i * 200);
-    }
-}
-
-// 簡化版詞句完成特效（適用於低性能設備）
-function createSimplePhraseEffect(phrase) {
-    const effectDiv = document.createElement('div');
-    effectDiv.style.cssText = `
-        position: fixed;
-        top: 30%;
-        left: 50%;
-        transform: translateX(-50%);
-        background: rgba(255, 215, 0, 0.9);
-        color: #013;
-        padding: 10px 20px;
-        border-radius: 15px;
-        font-size: 1.2em;
-        font-weight: bold;
-        text-align: center;
-        pointer-events: none;
-        z-index: 1000;
-        transition: opacity 0.3s ease;
-    `;
-    effectDiv.textContent = `🎉 完成：${phrase} 🎉`;
-    
-    document.body.appendChild(effectDiv);
-    
-    // 2秒後淡出移除
-    setTimeout(() => {
-        effectDiv.style.opacity = '0';
-        setTimeout(() => {
-            if (effectDiv.parentNode) {
-                effectDiv.parentNode.removeChild(effectDiv);
-            }
-        }, 300);
-    }, 2000);
-}
-
-// 連擊特效
-function createComboEffect(combo) {
-    const effectDiv = document.createElement('div');
-    effectDiv.style.cssText = `
-        position: fixed;
-        top: 25%;
-        left: 50%;
-        transform: translateX(-50%);
-        background: linear-gradient(45deg, #FF6B35, #F7931E);
-        color: white;
+        background: rgba(15, 15, 35, 0.85);
+        color: #FFD700;
         padding: 8px 16px;
         border-radius: 12px;
-        font-size: 1.1em;
+        font-size: 1em;
         font-weight: bold;
         text-align: center;
+        box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);
+        border: 2px solid rgba(255, 215, 0, 0.5);
         pointer-events: none;
-        z-index: 999;
-        animation: comboPopup 1.5s ease-out forwards;
-        box-shadow: 0 4px 15px rgba(255, 107, 53, 0.4);
+        z-index: 101;
+        animation: hudPhraseComplete 2s ease-out forwards;
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
     `;
-    effectDiv.textContent = `🔥 ${combo}連擊！+1秒`;
+    effectDiv.innerHTML = `✨ 完成：<span style="color: #FFFFE0;">${phrase}</span> ✨`;
     
     // 添加動畫樣式
     const style = document.createElement('style');
     style.textContent = `
-        @keyframes comboPopup {
+        @keyframes hudPhraseComplete {
             0% { 
                 opacity: 0; 
                 transform: translateX(-50%) translateY(-20px) scale(0.8); 
             }
-            30% { 
+            20% { 
                 opacity: 1; 
-                transform: translateX(-50%) translateY(0px) scale(1.1); 
+                transform: translateX(-50%) translateY(0px) scale(1.05); 
             }
             70% { 
                 opacity: 1; 
@@ -3145,6 +3005,159 @@ function createComboEffect(combo) {
             100% { 
                 opacity: 0; 
                 transform: translateX(-50%) translateY(-15px) scale(0.9); 
+            }
+        }
+    `;
+    document.head.appendChild(style);
+    
+    document.body.appendChild(effectDiv);
+    
+    // 2秒後移除效果
+    setTimeout(() => {
+        if (effectDiv.parentNode) {
+            effectDiv.parentNode.removeChild(effectDiv);
+        }
+        if (style.parentNode) {
+            style.parentNode.removeChild(style);
+        }
+    }, 2000);
+    
+    // 添加簡化的慶祝效果
+    createSimpleCelebrationEffect();
+}
+
+// 創建簡化的慶祝效果 - HUD 區域版本
+function createSimpleCelebrationEffect() {
+    // 只創建 2 個小型星星效果在 HUD 區域
+    for (let i = 0; i < 2; i++) {
+        setTimeout(() => {
+            const star = document.createElement('div');
+            star.style.cssText = `
+                position: fixed;
+                top: 45px;
+                left: ${50 + (i === 0 ? -15 : 15)}%;
+                font-size: 1.2em;
+                pointer-events: none;
+                z-index: 102;
+                animation: hudStarPop 1.2s ease-out forwards;
+                color: #FFD700;
+                text-shadow: 0 0 8px rgba(255, 215, 0, 0.6);
+            `;
+            star.textContent = ['✨', '⭐', '💫'][Math.floor(Math.random() * 3)];
+            
+            // 添加 HUD 星星動畫
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes hudStarPop {
+                    0% { 
+                        opacity: 0; 
+                        transform: translateY(10px) scale(0.5); 
+                    }
+                    30% { 
+                        opacity: 1; 
+                        transform: translateY(-5px) scale(1.2); 
+                    }
+                    100% { 
+                        opacity: 0; 
+                        transform: translateY(-15px) scale(0.8); 
+                    }
+                }
+            `;
+            document.head.appendChild(style);
+            
+            document.body.appendChild(star);
+            
+            // 1.2秒後移除
+            setTimeout(() => {
+                if (star.parentNode) {
+                    star.parentNode.removeChild(star);
+                }
+                if (style.parentNode) {
+                    style.parentNode.removeChild(style);
+                }
+            }, 1200);
+        }, i * 150);
+    }
+}
+
+// 簡化版詞句完成特效（適用於低性能設備）- HUD 版本
+function createSimplePhraseEffect(phrase) {
+    const effectDiv = document.createElement('div');
+    effectDiv.style.cssText = `
+        position: fixed;
+        top: 50px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(15, 15, 35, 0.9);
+        color: #FFD700;
+        padding: 6px 12px;
+        border-radius: 10px;
+        font-size: 0.9em;
+        font-weight: bold;
+        text-align: center;
+        pointer-events: none;
+        z-index: 101;
+        transition: opacity 0.3s ease;
+        border: 2px solid rgba(255, 215, 0, 0.5);
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+    `;
+    effectDiv.textContent = `✨ 完成：${phrase} ✨`;
+    
+    document.body.appendChild(effectDiv);
+    
+    // 1.5秒後淡出移除
+    setTimeout(() => {
+        effectDiv.style.opacity = '0';
+        setTimeout(() => {
+            if (effectDiv.parentNode) {
+                effectDiv.parentNode.removeChild(effectDiv);
+            }
+        }, 300);
+    }, 1500);
+}
+
+// 連擊特效 - HUD 區域版本
+function createComboEffect(combo) {
+    const effectDiv = document.createElement('div');
+    effectDiv.style.cssText = `
+        position: fixed;
+        top: 50px;
+        right: 20px;
+        background: rgba(255, 107, 53, 0.9);
+        color: white;
+        padding: 6px 12px;
+        border-radius: 10px;
+        font-size: 0.9em;
+        font-weight: bold;
+        text-align: center;
+        pointer-events: none;
+        z-index: 101;
+        animation: hudComboPopup 1.5s ease-out forwards;
+        box-shadow: 0 3px 10px rgba(255, 107, 53, 0.4);
+        border: 2px solid rgba(255, 107, 53, 0.6);
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+    `;
+    effectDiv.textContent = `🔥 ${combo}連擊！+1秒`;
+    
+    // 添加動畫樣式
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes hudComboPopup {
+            0% { 
+                opacity: 0; 
+                transform: translateX(20px) scale(0.8); 
+            }
+            30% { 
+                opacity: 1; 
+                transform: translateX(0px) scale(1.05); 
+            }
+            70% { 
+                opacity: 1; 
+                transform: translateX(0px) scale(1); 
+            }
+            100% { 
+                opacity: 0; 
+                transform: translateX(-10px) scale(0.9); 
             }
         }
     `;

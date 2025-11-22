@@ -352,7 +352,7 @@
         canvas {
             display: block;
             max-width: 100%;
-            height: auto;
+            /* 移除 height: auto 防止瀏覽器自動縮放造成 cell 拉伸 */
             /* Canvas 需要接收事件但不能攔截按鈕 */
             position: relative;
             z-index: 1;
@@ -1921,7 +1921,10 @@
     </div>
     <div id="countdown-screen"
         style="display:none; position:fixed; inset:0; background:radial-gradient(ellipse at 50% 50%, rgba(25, 25, 112, 0.2) 0%, transparent 70%), rgba(15, 15, 35, 0.05); z-index:1001; align-items:center; justify-content:center; backdrop-filter:blur(2px);">
-        <div style="color:#FFD700; font-size:4em; font-weight:bold; text-shadow:0 0 20px rgba(255, 215, 0, 0.5), 0 0 40px rgba(255, 215, 0, 0.3);" id="countdown-number">5</div>
+        <div style="text-align:center;">
+            <div style="color:#FFD700; font-size:4em; font-weight:bold; text-shadow:0 0 20px rgba(255, 215, 0, 0.5), 0 0 40px rgba(255, 215, 0, 0.3);" id="countdown-number">5</div>
+            <div style="color:#FFD700; font-size:1.5em; font-weight:bold; text-shadow:0 0 15px rgba(255, 215, 0, 0.4); margin-top:10px;" id="direction-hint">➡️ 向右開始</div>
+        </div>
     </div>
     
     <!-- 說明頁 -->
