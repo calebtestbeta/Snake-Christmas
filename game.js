@@ -1022,9 +1022,10 @@ function drawChristmasLightBorder() {
     const spacing = cell * (isMobile ? 0.75 : 0.8);    // 手機使用較密集間距
     const borderOffset = Math.max(lightSize * 1.5, controlButtonSafeZone); // 動態邊界偏移
     
-    // 計算每邊的燈泡數量（基於遊戲內容區域）
+    // 計算每邊的燈泡數量（基於遊戲內容區域，考慮安全區域）
     const topBottomLights = Math.floor(gameContentWidth / spacing);
-    const leftRightLights = Math.floor(gameContentHeight / spacing);
+    const availableVerticalSpace = gameContentHeight - controlButtonSafeZone; // 減去底部安全區域
+    const leftRightLights = Math.floor(availableVerticalSpace / spacing);
     
     // 聖誕燈數量計算完成
     
@@ -1062,7 +1063,7 @@ function drawChristmasLightBorder() {
     // 下邊 - 智能安全區域定位（避免與控制按鈕重疊）
     for (let i = 0; i < topBottomLights; i++) {
         const x = (i + 0.5) * spacing;
-        const y = gameContentHeight - controlButtonSafeZone; // 直接使用安全區域偏移
+        const y = gameContentHeight - (controlButtonSafeZone * 0.5); // 使用一半的安全區域，更接近但不重疊
         
         // 下邊燈泡顏色輪替：與上邊不同步
         const colorCycleSpeed = 0.6; // 稍快的顏色變化
@@ -1086,7 +1087,7 @@ function drawChristmasLightBorder() {
     // 左邊 - 智能安全區域定位
     for (let i = 0; i < leftRightLights; i++) {
         const x = lightSize / 2 + 5; // 簡單的左邊邊距
-        const y = (i + 0.5) * spacing;
+        const y = (i + 0.5) * spacing; // 使用調整後的燈泡數量，自動避開底部
         
         // 左邊燈泡顏色輪替：垂直方向的彩虹效果
         const colorCycleSpeed = 0.4; // 慢速顏色變化
@@ -1110,7 +1111,7 @@ function drawChristmasLightBorder() {
     // 右邊 - 智能安全區域定位
     for (let i = 0; i < leftRightLights; i++) {
         const x = gameContentWidth - lightSize / 2 - 5; // 簡單的右邊邊距
-        const y = (i + 0.5) * spacing;
+        const y = (i + 0.5) * spacing; // 使用調整後的燈泡數量，自動避開底部
         
         // 右邊燈泡顏色輪替：與左邊反向的彩虹效果
         const colorCycleSpeed = 0.7; // 快速顏色變化
