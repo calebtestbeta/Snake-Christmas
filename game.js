@@ -1655,40 +1655,75 @@ function draw() {
             snake.forEach((s, i) => {
                 if (s && typeof s.x === 'number' && typeof s.y === 'number') {
                     if (i === 0) {
-                        // 蛇頭：繪製三角形箭頭（聖誕金色主題）
-                        // 繪製外層邊框
-                        fill(255, 215, 0);  // 金色填充
-                        stroke(184, 134, 11);  // 深金色邊框
-                        strokeWeight(2);
-                        
+                        // 蛇頭：繪製可愛的蛇頭（聖誕金色主題）
                         const centerX = s.x * cell + cell / 2;
                         const centerY = s.y * cell + cell / 2;
-                        const size = cell * 0.4;
-
+                        const headSize = cell * 0.45;
+                        
+                        push();
+                        
+                        // 根據方向調整蛇頭朝向
+                        translate(centerX, centerY);
                         if (dir === 'RIGHT') {
-                            triangle(centerX - size, centerY - size, centerX - size, centerY + size, centerX + size, centerY);
+                            // 向右：默認方向
                         } else if (dir === 'LEFT') {
-                            triangle(centerX + size, centerY - size, centerX + size, centerY + size, centerX - size, centerY);
+                            rotate(PI);
                         } else if (dir === 'UP') {
-                            triangle(centerX - size, centerY + size, centerX + size, centerY + size, centerX, centerY - size);
+                            rotate(-PI/2);
                         } else if (dir === 'DOWN') {
-                            triangle(centerX - size, centerY - size, centerX + size, centerY - size, centerX, centerY + size);
+                            rotate(PI/2);
                         }
                         
-                        // 繪製內層高亮
-                        fill(255, 255, 255, 180);  // 半透明白色高亮
+                        // 繪製蛇頭主體（橢圓形）
+                        fill(255, 215, 0);  // 金黃色填充
+                        stroke(184, 134, 11);  // 深金色邊框
+                        strokeWeight(2);
+                        ellipse(0, 0, headSize * 1.4, headSize);
+                        
+                        // 繪製蛇鼻子（小橢圓，朝向前方）
+                        fill(255, 245, 120);  // 淺金色鼻子
+                        stroke(160, 120, 10);  // 深色鼻子邊框
+                        strokeWeight(1.5);
+                        ellipse(headSize * 0.45, 0, headSize * 0.25, headSize * 0.15);
+                        
+                        // 繪製蛇眼睛（兩個小圓圈）
+                        // 左眼
+                        fill(40, 40, 40);  // 深色眼珠
                         noStroke();
-                        const innerSize = size * 0.6;
+                        ellipse(-headSize * 0.1, -headSize * 0.2, headSize * 0.15);
+                        // 右眼
+                        ellipse(-headSize * 0.1, headSize * 0.2, headSize * 0.15);
                         
-                        if (dir === 'RIGHT') {
-                            triangle(centerX - innerSize, centerY - innerSize, centerX - innerSize, centerY + innerSize, centerX + innerSize, centerY);
-                        } else if (dir === 'LEFT') {
-                            triangle(centerX + innerSize, centerY - innerSize, centerX + innerSize, centerY + innerSize, centerX - innerSize, centerY);
-                        } else if (dir === 'UP') {
-                            triangle(centerX - innerSize, centerY + innerSize, centerX + innerSize, centerY + innerSize, centerX, centerY - innerSize);
-                        } else if (dir === 'DOWN') {
-                            triangle(centerX - innerSize, centerY - innerSize, centerX + innerSize, centerY - innerSize, centerX, centerY + innerSize);
-                        }
+                        // 繪製眼睛高光（讓眼睛更有神）
+                        fill(255, 255, 255);
+                        ellipse(-headSize * 0.05, -headSize * 0.18, headSize * 0.06);
+                        ellipse(-headSize * 0.05, headSize * 0.22, headSize * 0.06);
+                        
+                        // 繪製可愛的臉頰腮紅
+                        fill(255, 180, 180, 100);  // 半透明粉紅色
+                        noStroke();
+                        ellipse(-headSize * 0.35, -headSize * 0.3, headSize * 0.2);
+                        ellipse(-headSize * 0.35, headSize * 0.3, headSize * 0.2);
+                        
+                        // 繪製蛇舌頭（小小的分叉舌頭，增加可愛感）
+                        stroke(220, 60, 60);  // 紅色舌頭
+                        strokeWeight(2);
+                        // 舌頭主體
+                        line(headSize * 0.5, 0, headSize * 0.65, 0);
+                        // 分叉部分
+                        line(headSize * 0.65, 0, headSize * 0.7, -headSize * 0.08);
+                        line(headSize * 0.65, 0, headSize * 0.7, headSize * 0.08);
+                        
+                        // 繪製頭部裝飾（小小的聖誕帽效果 - 可選）
+                        fill(220, 50, 50, 150);  // 半透明紅色
+                        noStroke();
+                        ellipse(-headSize * 0.5, -headSize * 0.4, headSize * 0.3, headSize * 0.2);
+                        
+                        // 帽子上的白色毛球
+                        fill(255, 255, 255, 200);
+                        ellipse(-headSize * 0.55, -headSize * 0.45, headSize * 0.12);
+                        
+                        pop();
                     } else {
                         // 蛇身：根據字詞類型顯示顏色
                         const charIndex = i - 1; // 修正索引計算：i=1對應collectedChars[0]
