@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>聖誕蛇頭設計生成器</title>
+    <!-- 改用原生Canvas API，不需要P5.js -->
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0F0F23 0%, #191970 50%, #0F0F23 100%);
+            color: #FFD700;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            text-align: center;
+        }
+        
+        h1 {
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        
+        .preview-section {
+            background: rgba(255,255,255,0.1);
+            border-radius: 15px;
+            padding: 30px;
+            margin: 20px 0;
+            backdrop-filter: blur(10px);
+        }
+        
+        .canvas-container {
+            display: inline-block;
+            margin: 20px;
+            padding: 20px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+            border: 2px solid rgba(255,215,0,0.3);
+        }
+        
+        .direction-label {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #FFD700;
+        }
+        
+        .controls {
+            margin: 30px 0;
+        }
+        
+        button {
+            background: linear-gradient(45deg, #B8860B, #DAA520);
+            color: #013;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-weight: bold;
+            cursor: pointer;
+            margin: 10px;
+            transition: all 0.3s ease;
+            font-size: 16px;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255,215,0,0.4);
+        }
+        
+        .size-controls {
+            margin: 20px 0;
+        }
+        
+        .size-controls label {
+            margin: 0 10px;
+            font-weight: bold;
+        }
+        
+        .size-controls input {
+            margin: 0 10px;
+            padding: 8px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+        
+        .description {
+            text-align: left;
+            background: rgba(255,215,0,0.1);
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border-left: 4px solid #FFD700;
+        }
+        
+        .download-info {
+            background: rgba(0,255,0,0.1);
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid #00FF00;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🐍 聖誕蛇頭設計生成器</h1>
+        
+        <div class="description">
+            <h3>📋 設計說明</h3>
+            <p>• <strong>目的</strong>：為聖誕貪食蛇遊戲設計清晰的方向性箭頭蛇頭</p>
+            <p>• <strong>設計特色</strong>：箭頭形狀、聖誕星點裝飾、動態變色系統</p>
+            <p>• <strong>色彩主題</strong>：聖誕金色系 (#FFD700, #B8860B) 配白色聖誕裝飾</p>
+            <p>• <strong>技術需求</strong>：四個方向的箭頭圖案，支援食物類型變色</p>
+        </div>
+        
+        <div class="size-controls">
+            <label for="cellSize">Cell 大小:</label>
+            <input type="range" id="cellSize" min="20" max="60" value="40" onchange="updateSize()">
+            <span id="cellSizeValue">40</span>px
+            
+            <button onclick="regenerateHeads()">🔄 重新生成</button>
+        </div>
+        
+        <div class="preview-section">
+            <h2>🎯 四方向蛇頭預覽</h2>
+            <div id="preview-container">
+                <!-- Canvas elements will be inserted here -->
+            </div>
+        </div>
+        
+        <div class="controls">
+            <button onclick="downloadAllHeads()">📥 下載所有方向 (ZIP)</button>
+            <button onclick="downloadSinglePNG()">🖼️ 下載單張大圖</button>
+            <button onclick="generateGameSizePNG()">🎮 生成遊戲用PNG (建議)</button>
+        </div>
+        
+        <div class="download-info">
+            <h3>💡 使用建議</h3>
+            <p>1. <strong>遊戲用PNG</strong>: 點擊「生成遊戲用PNG」會產生一張包含四個方向的PNG圖片</p>
+            <p>2. <strong>檔案放置</strong>: 下載後將PNG檔案放在 <code>/images/snake-head.png</code></p>
+            <p>3. <strong>遊戲整合</strong>: 我會幫你修改遊戲代碼以使用PNG圖片而非P5.js繪圖</p>
+            <p>4. <strong>效能優化</strong>: 使用PNG圖片比即時繪圖更高效，特別是在移動設備上</p>
+        </div>
+    </div>
+
+    <script>
+        let cellSize = 40;
+        let canvases = [];
+        
+        // DOM載入完成後初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            generateHeads();
+        });
+        
+        function generateHeads() {
+            const container = document.getElementById('preview-container');
+            container.innerHTML = ''; // 清空現有內容
+            canvases = []; // 重置canvas陣列
+            
+            const directions = [
+                { name: 'RIGHT', label: '→ 向右', rotation: 0 },
+                { name: 'LEFT', label: '← 向左', rotation: Math.PI },
+                { name: 'UP', label: '↑ 向上', rotation: -Math.PI/2 },
+                { name: 'DOWN', label: '↓ 向下', rotation: Math.PI/2 }
+            ];
+            
+            console.log('開始生成蛇頭，cellSize:', cellSize);
+            
+            directions.forEach((dir, index) => {
+                // 建立容器
+                const canvasContainer = document.createElement('div');
+                canvasContainer.className = 'canvas-container';
+                
+                const label = document.createElement('div');
+                label.className = 'direction-label';
+                label.textContent = dir.label;
+                canvasContainer.appendChild(label);
+                
+                // 建立原生Canvas元素
+                const canvasSize = cellSize * 3;
+                const canvas = document.createElement('canvas');
+                canvas.width = canvasSize;
+                canvas.height = canvasSize;
+                canvas.style.border = '2px solid #FFD700';
+                canvas.style.backgroundColor = 'rgba(240, 240, 255, 0.1)';
+                
+                const ctx = canvas.getContext('2d');
+                canvases.push({ canvas, ctx, direction: dir.name, rotation: dir.rotation });
+                
+                console.log(`生成 ${dir.name} 方向蛇頭，canvas大小: ${canvasSize}x${canvasSize}`);
+                
+                // 繪製蛇頭
+                drawSnakeHead(ctx, canvasSize, dir.rotation);
+                
+                // 將canvas加到DOM
+                canvasContainer.appendChild(canvas);
+                container.appendChild(canvasContainer);
+            });
+        }
+        
+        function drawSnakeHead(ctx, canvasSize, rotation) {
+            const centerX = canvasSize / 2;
+            const centerY = canvasSize / 2;
+            const headSize = cellSize * 0.6;  // 對應遊戲中的箭頭大小（放大版）
+            
+            console.log(`繪製聖誕箭頭蛇頭，headSize: ${headSize}, rotation: ${rotation}`);
+            
+            // 清除canvas
+            ctx.clearRect(0, 0, canvasSize, canvasSize);
+            
+            // 保存當前狀態
+            ctx.save();
+            
+            // 移到中心並旋轉
+            ctx.translate(centerX, centerY);
+            ctx.rotate(rotation);
+            
+            // 箭頭主體 - 聖誕金色
+            ctx.fillStyle = 'rgb(255, 215, 0)';     // 聖誕金色
+            ctx.strokeStyle = 'rgb(184, 134, 11)';  // 深金色邊框
+            ctx.lineWidth = 3;
+            
+            const arrowLength = headSize * 1.0;  // 增加長度讓箭頭更延展
+            const arrowWidth = headSize * 0.7;   // 稍微增加寬度
+            const shaftWidth = headSize * 0.4;   // 增加桿身寬度，更好連接
+            
+            // 箭頭形狀（使用三角形和矩形組合，延伸連接設計）
+            ctx.beginPath();
+            // 箭頭尖端
+            ctx.moveTo(arrowLength * 0.5, 0);              // 箭頭尖（向前延伸）
+            ctx.lineTo(arrowLength * 0.2, -arrowWidth);    // 上角
+            ctx.lineTo(arrowLength * 0.2, arrowWidth);     // 下角
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+            
+            // 箭頭桿身（延伸到幾乎填滿格子）
+            ctx.beginPath();
+            ctx.rect(-arrowLength * 0.5, -shaftWidth, arrowLength * 0.7, shaftWidth * 2);
+            ctx.fill();
+            ctx.stroke();
+            
+            // 繪製聖誕裝飾（預設狀態）
+            ctx.fillStyle = 'rgb(255, 255, 255)';  // 白色裝飾
+            ctx.strokeStyle = 'none';
+            
+            const accentSize = headSize * 0.15;
+            
+            // 中心聖誕星
+            drawStar(ctx, 0, 0, accentSize * 0.6, 4);
+            
+            // 周圍的雪花點
+            for (let i = 0; i < 4; i++) {
+                const angle = i * Math.PI / 2;
+                const x = Math.cos(angle) * accentSize * 0.8;
+                const y = Math.sin(angle) * accentSize * 0.8;
+                ctx.beginPath();
+                ctx.arc(x, y, accentSize * 0.15, 0, 2 * Math.PI);
+                ctx.fill();
+            }
+            
+            // 恢復狀態
+            ctx.restore();
+        }
+        
+        // 輔助函數：繪製星星
+        function drawStar(ctx, x, y, radius, points) {
+            const angle = (Math.PI * 2) / points;
+            const halfAngle = angle / 2;
+            
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.beginPath();
+            
+            for (let i = 0; i < points; i++) {
+                const outerAngle = i * angle;
+                const innerAngle = outerAngle + halfAngle;
+                
+                const outerX = Math.cos(outerAngle) * radius;
+                const outerY = Math.sin(outerAngle) * radius;
+                const innerX = Math.cos(innerAngle) * radius * 0.5;
+                const innerY = Math.sin(innerAngle) * radius * 0.5;
+                
+                if (i === 0) {
+                    ctx.moveTo(outerX, outerY);
+                } else {
+                    ctx.lineTo(outerX, outerY);
+                }
+                ctx.lineTo(innerX, innerY);
+            }
+            
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+        }
+        
+        function updateSize() {
+            const slider = document.getElementById('cellSize');
+            const valueDisplay = document.getElementById('cellSizeValue');
+            cellSize = parseInt(slider.value);
+            valueDisplay.textContent = cellSize;
+        }
+        
+        function regenerateHeads() {
+            generateHeads();
+        }
+        
+        function downloadSinglePNG() {
+            if (canvases.length === 0) return;
+            
+            // 使用第一個canvas (向右) 作為下載
+            const canvas = canvases[0].canvas;
+            const link = document.createElement('a');
+            link.download = 'snake-head-right.png';
+            link.href = canvas.toDataURL();
+            link.click();
+        }
+        
+        function generateGameSizePNG() {
+            // 建立一張包含四個方向的大圖
+            const combinedCanvas = document.createElement('canvas');
+            const combinedSize = cellSize * 8;
+            combinedCanvas.width = combinedSize;
+            combinedCanvas.height = cellSize * 2;
+            const combinedCtx = combinedCanvas.getContext('2d');
+            
+            // 設定透明背景
+            combinedCtx.clearRect(0, 0, combinedSize, cellSize * 2);
+            
+            // 繪製四個方向的蛇頭
+            const directions = [
+                { rotation: 0, x: cellSize },                    // RIGHT
+                { rotation: Math.PI, x: cellSize * 3 },          // LEFT  
+                { rotation: -Math.PI/2, x: cellSize * 5 },       // UP
+                { rotation: Math.PI/2, x: cellSize * 7 }         // DOWN
+            ];
+            
+            directions.forEach((dir) => {
+                combinedCtx.save();
+                combinedCtx.translate(dir.x, cellSize);
+                combinedCtx.rotate(dir.rotation);
+                
+                const headSize = cellSize * 0.6;
+                
+                // 箭頭主體 - 聖誕金色
+                combinedCtx.fillStyle = 'rgb(255, 215, 0)';
+                combinedCtx.strokeStyle = 'rgb(184, 134, 11)';
+                combinedCtx.lineWidth = 3;
+                
+                const arrowLength = headSize * 1.0;  // 增加長度讓箭頭更延展
+                const arrowWidth = headSize * 0.7;   // 稍微增加寬度
+                const shaftWidth = headSize * 0.4;   // 增加桿身寬度，更好連接
+                
+                // 箭頭尖端
+                combinedCtx.beginPath();
+                combinedCtx.moveTo(arrowLength * 0.5, 0);
+                combinedCtx.lineTo(arrowLength * 0.2, -arrowWidth);
+                combinedCtx.lineTo(arrowLength * 0.2, arrowWidth);
+                combinedCtx.closePath();
+                combinedCtx.fill();
+                combinedCtx.stroke();
+                
+                // 箭頭桿身
+                combinedCtx.beginPath();
+                combinedCtx.rect(-arrowLength * 0.5, -shaftWidth, arrowLength * 0.7, shaftWidth * 2);
+                combinedCtx.fill();
+                combinedCtx.stroke();
+                
+                // 聖誕裝飾
+                combinedCtx.fillStyle = 'rgb(255, 255, 255)';
+                const accentSize = headSize * 0.15;
+                
+                // 中心聖誕星
+                drawStarCombined(combinedCtx, 0, 0, accentSize * 0.6, 4);
+                
+                // 周圍雪花點
+                for (let j = 0; j < 4; j++) {
+                    const angle = j * Math.PI / 2;
+                    const x = Math.cos(angle) * accentSize * 0.8;
+                    const y = Math.sin(angle) * accentSize * 0.8;
+                    combinedCtx.beginPath();
+                    combinedCtx.arc(x, y, accentSize * 0.15, 0, 2 * Math.PI);
+                    combinedCtx.fill();
+                }
+                
+                combinedCtx.restore();
+            });
+            
+            // 下載組合圖片
+            const link = document.createElement('a');
+            link.download = 'snake-heads-combined.png';
+            link.href = combinedCanvas.toDataURL();
+            link.click();
+        }
+        
+        // 用於組合圖片的星星繪製函數
+        function drawStarCombined(ctx, x, y, radius, points) {
+            const angle = (Math.PI * 2) / points;
+            const halfAngle = angle / 2;
+            
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.beginPath();
+            
+            for (let i = 0; i < points; i++) {
+                const outerAngle = i * angle;
+                const innerAngle = outerAngle + halfAngle;
+                
+                const outerX = Math.cos(outerAngle) * radius;
+                const outerY = Math.sin(outerAngle) * radius;
+                const innerX = Math.cos(innerAngle) * radius * 0.5;
+                const innerY = Math.sin(innerAngle) * radius * 0.5;
+                
+                if (i === 0) {
+                    ctx.moveTo(outerX, outerY);
+                } else {
+                    ctx.lineTo(outerX, outerY);
+                }
+                ctx.lineTo(innerX, innerY);
+            }
+            
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+        }
+        
+        function downloadAllHeads() {
+            // 依序下載四個方向
+            canvases.forEach((item, index) => {
+                setTimeout(() => {
+                    const link = document.createElement('a');
+                    link.download = `snake-head-${item.direction.toLowerCase()}.png`;
+                    link.href = item.canvas.toDataURL();
+                    link.click();
+                }, index * 500);
+            });
+        }
+    </script>
+</body>
+</html>

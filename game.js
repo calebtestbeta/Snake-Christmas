@@ -11,7 +11,7 @@ const GAME_CONFIG = {
     FRAME_RATE: 16,
 
     // 聖誕字符系統配置 - 優化任務完成機會
-    INITIAL_FOOD_COUNT: 6,                    // 調整字符數量以適應縮小的網格
+    INITIAL_FOOD_COUNT: 8,                    // 調整字符數量以適應縮小的網格
     MAX_SPAWN_ATTEMPTS: 100,
     CORE_CHRISTMAS_PROBABILITY: 0.55,         // 提高核心聖誕字符出現概率
 
@@ -51,6 +51,45 @@ let difficulty = 'easy';
 let comboCount = 0;
 let lastCharTime = 0;
 let comboTimeWindow = 3000; // 3秒內的連續收集算連擊
+
+// 蛇頭動態變色系統
+let snakeHeadColor = 'default';  // 目前蛇頭顏色狀態
+let colorChangeStartTime = 0;    // 變色開始時間
+let colorChangeDuration = 2000;  // 變色持續時間 (2秒)
+
+// 箭頭蛇頭顏色配置
+const ARROW_HEAD_COLORS = {
+    default: {
+        fill: [255, 215, 0],      // 聖誕金色
+        stroke: [184, 134, 11],   // 深金色邊框
+        accent: [255, 255, 255]   // 白色裝飾
+    },
+    faith: {
+        fill: [255, 235, 59],     // 明亮金黃 - 信仰光芒
+        stroke: [230, 126, 34],   // 橙金色邊框
+        accent: [255, 255, 255]   // 白色十字裝飾
+    },
+    christmas: {
+        fill: [244, 67, 54],      // 聖誕紅
+        stroke: [183, 28, 28],    // 深紅邊框  
+        accent: [255, 255, 255]   // 白色雪花裝飾
+    },
+    blessing: {
+        fill: [156, 39, 176],     // 祝福紫
+        stroke: [106, 27, 154],   // 深紫邊框
+        accent: [255, 215, 0]     // 金色愛心裝飾
+    },
+    praise: {
+        fill: [255, 255, 255],    // 純白 - 讚美光輝
+        stroke: [189, 189, 189],  // 銀色邊框
+        accent: [255, 215, 0]     // 金色星星裝飾
+    },
+    sharing: {
+        fill: [255, 105, 180],    // 溫暖粉紅
+        stroke: [219, 39, 119],   // 深粉邊框
+        accent: [255, 255, 255]   // 白色心形裝飾
+    }
+};
 
 // 伯利恆之星系統
 let bethlehemStar = {
@@ -678,8 +717,6 @@ function setup() {
     }
 }
 
-// 移除舊的顏色驗證函數，不再需要
-
 // 驗證配置常數是否正確載入
 function validateGameConfig() {
     console.log('=== 遊戲配置驗證 ===');
@@ -1184,6 +1221,10 @@ function resetGameState() {
     // 重置連擊系統
     comboCount = 0;
     lastCharTime = 0;
+    
+    // 重置蛇頭變色系統
+    snakeHeadColor = 'default';
+    colorChangeStartTime = 0;
 }
 
 // 詞句檢測系統 - 彈性亂序檢測
@@ -1655,10 +1696,10 @@ function draw() {
             snake.forEach((s, i) => {
                 if (s && typeof s.x === 'number' && typeof s.y === 'number') {
                     if (i === 0) {
-                        // 蛇頭：繪製可愛的蛇頭（聖誕金色主題）
+                        // 蛇頭：動態變色箭頭設計（放大版，與方塊連接）
                         const centerX = s.x * cell + cell / 2;
                         const centerY = s.y * cell + cell / 2;
-                        const headSize = cell * 0.45;
+                        const headSize = cell * 0.6;  // 從 0.4 增加到 0.6
                         
                         push();
                         
@@ -1674,54 +1715,53 @@ function draw() {
                             rotate(PI/2);
                         }
                         
-                        // 繪製蛇頭主體（橢圓形）
-                        fill(255, 215, 0);  // 金黃色填充
-                        stroke(184, 134, 11);  // 深金色邊框
-                        strokeWeight(2);
-                        ellipse(0, 0, headSize * 1.4, headSize);
+                        // 獲取當前蛇頭顏色（根據變色狀態）
+                        const currentColor = getCurrentSnakeHeadColor();
+                        const colors = ARROW_HEAD_COLORS[currentColor];
                         
-                        // 繪製蛇鼻子（小橢圓，朝向前方）
-                        fill(255, 245, 120);  // 淺金色鼻子
-                        stroke(160, 120, 10);  // 深色鼻子邊框
-                        strokeWeight(1.5);
-                        ellipse(headSize * 0.45, 0, headSize * 0.25, headSize * 0.15);
+                        // 繪製箭頭主體
+                        fill(colors.fill[0], colors.fill[1], colors.fill[2]);
+                        stroke(colors.stroke[0], colors.stroke[1], colors.stroke[2]);
+                        strokeWeight(3);
                         
-                        // 繪製蛇眼睛（兩個小圓圈）
-                        // 左眼
-                        fill(40, 40, 40);  // 深色眼珠
-                        noStroke();
-                        ellipse(-headSize * 0.1, -headSize * 0.2, headSize * 0.15);
-                        // 右眼
-                        ellipse(-headSize * 0.1, headSize * 0.2, headSize * 0.15);
+                        const arrowLength = headSize * 1.0;  // 增加長度讓箭頭更延展
+                        const arrowWidth = headSize * 0.7;   // 稍微增加寬度
+                        const shaftWidth = headSize * 0.4;   // 增加桿身寬度，更好連接
                         
-                        // 繪製眼睛高光（讓眼睛更有神）
-                        fill(255, 255, 255);
-                        ellipse(-headSize * 0.05, -headSize * 0.18, headSize * 0.06);
-                        ellipse(-headSize * 0.05, headSize * 0.22, headSize * 0.06);
+                        // 箭頭形狀（使用三角形和矩形組合，延伸連接設計）
+                        // 箭頭尖端
+                        triangle(
+                            arrowLength * 0.5, 0,                // 箭頭尖（向前延伸）
+                            arrowLength * 0.2, -arrowWidth,      // 上角
+                            arrowLength * 0.2, arrowWidth        // 下角
+                        );
                         
-                        // 繪製可愛的臉頰腮紅
-                        fill(255, 180, 180, 100);  // 半透明粉紅色
-                        noStroke();
-                        ellipse(-headSize * 0.35, -headSize * 0.3, headSize * 0.2);
-                        ellipse(-headSize * 0.35, headSize * 0.3, headSize * 0.2);
+                        // 箭頭桿身（延伸到幾乎填滿格子）
+                        rect(
+                            -arrowLength * 0.5, -shaftWidth,    // 向後延伸更多
+                            arrowLength * 0.7, shaftWidth * 2   // 更長的桿身
+                        );
                         
-                        // 繪製蛇舌頭（小小的分叉舌頭，增加可愛感）
-                        stroke(220, 60, 60);  // 紅色舌頭
-                        strokeWeight(2);
-                        // 舌頭主體
-                        line(headSize * 0.5, 0, headSize * 0.65, 0);
-                        // 分叉部分
-                        line(headSize * 0.65, 0, headSize * 0.7, -headSize * 0.08);
-                        line(headSize * 0.65, 0, headSize * 0.7, headSize * 0.08);
+                        // 繪製裝飾元素（根據顏色類型）
+                        drawArrowAccent(currentColor, colors.accent, headSize);
                         
-                        // 繪製頭部裝飾（小小的聖誕帽效果 - 可選）
-                        fill(220, 50, 50, 150);  // 半透明紅色
-                        noStroke();
-                        ellipse(-headSize * 0.5, -headSize * 0.4, headSize * 0.3, headSize * 0.2);
-                        
-                        // 帽子上的白色毛球
-                        fill(255, 255, 255, 200);
-                        ellipse(-headSize * 0.55, -headSize * 0.45, headSize * 0.12);
+                        // 如果正在變色，添加閃爍效果
+                        if (millis() - colorChangeStartTime < colorChangeDuration) {
+                            const glowIntensity = 50 + 30 * sin(frameCount * 0.3);
+                            fill(colors.fill[0], colors.fill[1], colors.fill[2], glowIntensity);
+                            noStroke();
+                            
+                            // 外圍光暈
+                            triangle(
+                                arrowLength * 1.1, 0,
+                                arrowLength * 0.3, -arrowWidth * 1.1,
+                                arrowLength * 0.3, arrowWidth * 1.1
+                            );
+                            rect(
+                                -arrowLength * 0.5, -shaftWidth * 1.1,
+                                arrowLength * 0.9, shaftWidth * 2.2
+                            );
+                        }
                         
                         pop();
                     } else {
@@ -1765,6 +1805,106 @@ function draw() {
         console.error('繪製過程中發生錯誤:', error);
         // 確保遊戲不會因為繪製錯誤而停止
     }
+}
+
+// 獲取當前蛇頭顏色狀態
+function getCurrentSnakeHeadColor() {
+    // 如果正在變色期間，返回特殊顏色
+    if (millis() - colorChangeStartTime < colorChangeDuration) {
+        return snakeHeadColor;
+    }
+    // 否則返回預設顏色
+    return 'default';
+}
+
+// 觸發蛇頭變色
+function triggerSnakeHeadColorChange(foodType) {
+    snakeHeadColor = foodType;
+    colorChangeStartTime = millis();
+    console.log(`🎨 蛇頭變色為: ${foodType}`);
+}
+
+// 繪製箭頭裝飾元素
+function drawArrowAccent(colorType, accentColor, headSize) {
+    fill(accentColor[0], accentColor[1], accentColor[2]);
+    noStroke();
+    
+    const accentSize = headSize * 0.15;
+    
+    switch (colorType) {
+        case 'faith':
+            // 十字裝飾
+            rect(-accentSize * 0.3, -accentSize, accentSize * 0.6, accentSize * 2);  // 垂直
+            rect(-accentSize, -accentSize * 0.3, accentSize * 2, accentSize * 0.6);  // 水平
+            break;
+            
+        case 'christmas':
+            // 雪花裝飾（簡化版）
+            for (let i = 0; i < 6; i++) {
+                push();
+                rotate(i * PI / 3);
+                rect(-accentSize * 0.1, -accentSize, accentSize * 0.2, accentSize * 2);
+                pop();
+            }
+            break;
+            
+        case 'blessing':
+            // 愛心裝飾（簡化）
+            ellipse(-accentSize * 0.3, -accentSize * 0.2, accentSize, accentSize);
+            ellipse(accentSize * 0.3, -accentSize * 0.2, accentSize, accentSize);
+            triangle(-accentSize * 0.6, 0, accentSize * 0.6, 0, 0, accentSize * 0.8);
+            break;
+            
+        case 'praise':
+            // 星星裝飾
+            drawStar(0, 0, accentSize, 5);
+            break;
+            
+        case 'sharing':
+            // 心形裝飾（更小）
+            ellipse(-accentSize * 0.2, -accentSize * 0.1, accentSize * 0.8, accentSize * 0.8);
+            ellipse(accentSize * 0.2, -accentSize * 0.1, accentSize * 0.8, accentSize * 0.8);
+            triangle(-accentSize * 0.4, accentSize * 0.1, accentSize * 0.4, accentSize * 0.1, 0, accentSize * 0.6);
+            break;
+            
+        default:
+            // 預設聖誕裝飾：小聖誕星和雪花點
+            // 中心聖誕星
+            drawStar(0, 0, accentSize * 0.6, 4);
+            
+            // 周圍的雪花點（簡化版）
+            for (let i = 0; i < 4; i++) {
+                const angle = i * PI / 2;
+                const x = cos(angle) * accentSize * 0.8;
+                const y = sin(angle) * accentSize * 0.8;
+                ellipse(x, y, accentSize * 0.3, accentSize * 0.3);
+            }
+            break;
+    }
+}
+
+// 繪製星星的輔助函數
+function drawStar(x, y, radius, points) {
+    push();
+    translate(x, y);
+    const angle = TWO_PI / points;
+    const halfAngle = angle / 2;
+    
+    beginShape();
+    for (let i = 0; i < points; i++) {
+        const outerAngle = i * angle;
+        const innerAngle = outerAngle + halfAngle;
+        
+        const outerX = cos(outerAngle) * radius;
+        const outerY = sin(outerAngle) * radius;
+        const innerX = cos(innerAngle) * radius * 0.5;
+        const innerY = sin(innerAngle) * radius * 0.5;
+        
+        vertex(outerX, outerY);
+        vertex(innerX, innerY);
+    }
+    endShape(CLOSE);
+    pop();
 }
 
 function stepForward() {
@@ -1844,6 +1984,9 @@ function handleFoodConsumption(food) {
     // 記錄收集到的食物
     collectedChars.push(char);
     collectedCharTypes.push(foodType);
+
+    // 觸發蛇頭變色效果
+    triggerSnakeHeadColorChange(foodType);
 
     // 檢測完成的詞句
     const newPhrases = checkForCompletedPhrases();
@@ -3264,8 +3407,6 @@ function setupShareButton() {
         console.warn('⚠️ 找不到分享按鈕元素');
     }
 }
-
-// 移除舊的背景顏色設定函數 - 現在由 CSS 聖誕夜空漸層控制
 
 // 設置說明頁按鈕
 function setupHelpButtons() {
