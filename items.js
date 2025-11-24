@@ -30,6 +30,7 @@ window.ITEMS = {
         "哈利路亞": { bonus: 120, effect: "doubleFood" },
         "以馬內利": { bonus: 110, effect: "timeExtend" },
         "平安喜樂": { bonus: 90, effect: "calmMovement" },
+        "神愛世人": { bonus: 100, effect: "love" },
         
         // 3字重要詞句 (中等獎勵)
         "報佳音": { bonus: 60, effect: "speedUp" },
@@ -37,7 +38,6 @@ window.ITEMS = {
         "信望愛": { bonus: 70, effect: "balanced" },
         "感謝主": { bonus: 50, effect: "blessing" },
         "讚美主": { bonus: 50, effect: "joyful" },
-        "神愛世": { bonus: 65, effect: "love" },
         
         // 2字基礎詞句 (基礎獎勵)
         "聖誕": { bonus: 30, effect: "christmas" },
