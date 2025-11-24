@@ -3266,12 +3266,21 @@ async function shareGameResult() {
                     // 檢查是否支援檔案分享
                     if (navigator.canShare && navigator.canShare({ files: [file] })) {
                         console.log('📤 使用圖片分享模式');
-                        await navigator.share({
-                            title: '🎄 聖誕貪食蛇成果分享',
-                            text: generateShareText(),
-                            files: [file]
-                        });
-                        console.log('✅ 圖片分享成功');
+                        try {
+                            await navigator.share({
+                                title: '🎄 聖誕貪食蛇成果分享',
+                                text: generateShareText(),
+                                files: [file]
+                            });
+                            console.log('✅ 圖片分享成功');
+                        } catch (shareError) {
+                            if (shareError.name === 'AbortError') {
+                                console.log('ℹ️ 用戶取消了分享');
+                                return; // 用戶取消，直接返回，不執行後續操作
+                            } else {
+                                throw shareError; // 其他錯誤繼續拋出
+                            }
+                        }
                     } else {
                         // 不支援檔案分享，使用文字分享
                         console.log('📝 降級為文字分享模式');
@@ -3280,6 +3289,10 @@ async function shareGameResult() {
                 }, 'image/png', 0.9);
                 
             } catch (error) {
+                if (error.name === 'AbortError') {
+                    console.log('ℹ️ 用戶取消了分享');
+                    return; // 用戶取消，不需要降級處理
+                }
                 console.warn('⚠️ 圖片分享失敗，降級為文字分享:', error);
                 await shareAsText();
             }
@@ -3290,8 +3303,13 @@ async function shareGameResult() {
         }
         
     } catch (error) {
-        console.error('❌ 分享功能發生錯誤:', error);
-        showShareError('分享功能暫時不可用，請稍後再試');
+        if (error.name === 'AbortError') {
+            console.log('ℹ️ 用戶取消了分享');
+            // 用戶取消不需要顯示錯誤訊息
+        } else {
+            console.error('❌ 分享功能發生錯誤:', error);
+            showShareError('分享功能暫時不可用，請稍後再試');
+        }
     } finally {
         // 恢復按鈕狀態
         shareButton.innerHTML = originalContent;
