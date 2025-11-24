@@ -471,22 +471,58 @@
             box-shadow: 0 4px 12px rgba(255, 215, 0, 0.4);
         }
 
-        /* 詞句分組樣式 */
-        .phrase-group {
-            margin: 15px 0;
-            padding: 12px;
-            background: linear-gradient(135deg, 
-                rgba(255, 215, 0, 0.05) 0%, 
-                rgba(255, 255, 255, 0.1) 50%, 
-                rgba(255, 215, 0, 0.05) 100%);
+        /* 稀有度分組容器樣式 */
+        .rarity-group {
+            margin: 20px 0;
             border-radius: 15px;
-            border: 2px solid rgba(255, 215, 0, 0.3);
-            box-shadow: 
-                0 4px 15px rgba(255, 215, 0, 0.2),
-                inset 0 1px 3px rgba(255, 255, 255, 0.3);
             position: relative;
             overflow: hidden;
-            animation: phraseGlow 2s ease-in-out infinite alternate;
+        }
+        
+        .rarity-header {
+            text-align: center;
+            font-weight: bold;
+            font-size: 1.1em;
+            margin-bottom: 12px;
+        }
+        
+        .phrase-cards-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+        }
+        
+        /* 稀有度動畫效果 */
+        @keyframes rarityGlow {
+            0% { 
+                box-shadow: 
+                    0 4px 15px rgba(255, 215, 0, 0.2),
+                    inset 0 1px 3px rgba(255, 255, 255, 0.3);
+            }
+            100% { 
+                box-shadow: 
+                    0 6px 20px rgba(255, 215, 0, 0.4),
+                    inset 0 1px 3px rgba(255, 255, 255, 0.4),
+                    0 0 15px rgba(255, 215, 0, 0.2);
+            }
+        }
+
+        /* 詞句分組樣式 - 調整為適合分組內顯示 */
+        .phrase-group {
+            margin: 5px;
+            padding: 8px;
+            background: linear-gradient(135deg, 
+                rgba(255, 255, 255, 0.8) 0%, 
+                rgba(255, 255, 255, 0.6) 100%);
+            border-radius: 10px;
+            border: 1px solid rgba(255, 215, 0, 0.4);
+            box-shadow: 
+                0 2px 8px rgba(0, 0, 0, 0.1),
+                inset 0 1px 2px rgba(255, 255, 255, 0.4);
+            position: relative;
+            min-width: 120px;
+            flex: 0 0 auto;
         }
 
         .phrase-group::before {

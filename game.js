@@ -1251,9 +1251,9 @@ function checkForCompletedPhrases() {
                 requiredCounts[char] = (requiredCounts[char] || 0) + 1;
             });
             
-            // 檢查是否收集了足夠的字符（不要求順序）
+            // 檢查是否收集了完整的字符（完全匹配模式）
             const canComplete = Object.keys(requiredCounts).every(char => {
-                return collectedCharCounts[char] >= requiredCounts[char];
+                return collectedCharCounts[char] === requiredCounts[char];
             });
             
             if (canComplete) {
@@ -1273,7 +1273,7 @@ function checkForCompletedPhrases() {
                 // 應用詞句特殊效果
                 applyPhraseEffect(phrase);
                 
-                console.log(`🎯 完成詞句：${phrase} (彈性匹配)`);
+                console.log(`🎯 完成詞句：${phrase} (完全匹配)`);
             }
         }
     });
@@ -2265,28 +2265,104 @@ function gameOver() {
                 listEl.appendChild(summaryContainer);
             }
 
-            // 首先顯示完成的詞句分組 - 按稀有度分類排序
-            Array.from(phraseGroups.values())
-                .sort((a, b) => {
-                    // 定義稀有度權重
-                    const getRarityWeight = (phrase) => {
-                        if (phrase.length >= 4) return 3; // 傳奇級
-                        if (phrase.length === 3) return 2; // 稀有級
-                        return 1; // 基礎級
-                    };
-                    
-                    const weightA = getRarityWeight(a.phrase);
-                    const weightB = getRarityWeight(b.phrase);
-                    
-                    // 首先按稀有度排序（高稀有度優先）
-                    if (weightA !== weightB) {
-                        return weightB - weightA;
+            // 按稀有度分組顯示詞句
+            const rarityGroups = {
+                legendary: [], // 傳奇級 (4字以上)
+                rare: [],      // 稀有級 (3字)
+                common: []     // 基礎級 (2字)
+            };
+            
+            // 將詞句分類到不同稀有度組
+            Array.from(phraseGroups.values()).forEach(group => {
+                if (group.phrase.length >= 4) {
+                    rarityGroups.legendary.push(group);
+                } else if (group.phrase.length === 3) {
+                    rarityGroups.rare.push(group);
+                } else {
+                    rarityGroups.common.push(group);
+                }
+            });
+            
+            // 每組內按獎勵點數排序
+            Object.keys(rarityGroups).forEach(rarity => {
+                rarityGroups[rarity].sort((a, b) => b.bonus - a.bonus);
+            });
+            
+            let groupIndex = 0;
+            
+            // 顯示各稀有度分組
+            Object.entries(rarityGroups).forEach(([rarity, groups]) => {
+                if (groups.length === 0) return;
+                
+                // 創建稀有度分組容器
+                const rarityContainer = document.createElement('div');
+                rarityContainer.className = `rarity-group rarity-${rarity}`;
+                
+                // 設置稀有度容器樣式
+                const rarityConfig = {
+                    legendary: { 
+                        icon: '🌟', 
+                        title: '傳奇級成就', 
+                        color: 'rgba(255, 215, 0, 0.8)',
+                        bgColor: 'rgba(255, 215, 0, 0.1)'
+                    },
+                    rare: { 
+                        icon: '⭐', 
+                        title: '稀有級成就', 
+                        color: 'rgba(192, 192, 192, 0.8)',
+                        bgColor: 'rgba(192, 192, 192, 0.1)'
+                    },
+                    common: { 
+                        icon: '💫', 
+                        title: '基礎級成就', 
+                        color: 'rgba(205, 127, 50, 0.8)',
+                        bgColor: 'rgba(205, 127, 50, 0.1)'
                     }
-                    
-                    // 相同稀有度內按獎勵點數排序
-                    return b.bonus - a.bonus;
-                })
-                .forEach((group, index) => {
+                };
+                
+                const config = rarityConfig[rarity];
+                
+                rarityContainer.style.cssText = `
+                    margin: 15px 0;
+                    padding: 15px;
+                    background: linear-gradient(135deg, 
+                        ${config.bgColor || 'rgba(255, 215, 0, 0.1)'} 0%, 
+                        rgba(255, 255, 255, 0.05) 50%, 
+                        ${config.bgColor || 'rgba(255, 215, 0, 0.1)'} 100%);
+                    border-radius: 15px;
+                    border: 2px solid ${config.color || 'rgba(255, 215, 0, 0.8)'};
+                    box-shadow: 
+                        0 4px 15px ${config.color.replace('0.8', '0.3') || 'rgba(255, 215, 0, 0.3)'},
+                        inset 0 1px 3px rgba(255, 255, 255, 0.3);
+                    animation: rarityGlow 2s ease-in-out infinite alternate;
+                `;
+                
+                // 添加稀有度標題
+                const rarityHeader = document.createElement('div');
+                rarityHeader.className = 'rarity-header';
+                rarityHeader.innerHTML = `${config.icon} ${config.title} (${groups.length})`;
+                rarityHeader.style.cssText = `
+                    text-align: center;
+                    font-weight: bold;
+                    font-size: 1.1em;
+                    color: #B8860B;
+                    margin-bottom: 12px;
+                    text-shadow: 0 1px 3px rgba(255, 255, 255, 0.8);
+                `;
+                rarityContainer.appendChild(rarityHeader);
+                
+                // 創建詞句卡片容器
+                const phraseCardsContainer = document.createElement('div');
+                phraseCardsContainer.className = 'phrase-cards-container';
+                phraseCardsContainer.style.cssText = `
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 8px;
+                    justify-content: center;
+                `;
+                
+                // 添加該稀有度的所有詞句
+                groups.forEach((group, index) => {
                     // 創建詞句分組容器
                     const phraseContainer = document.createElement('div');
                     phraseContainer.className = 'phrase-group';
@@ -2305,29 +2381,16 @@ function gameOver() {
                         phraseContainer.style.transition = 'all 0.6s ease-out';
                     }, index * 150);
                     
-                    // 添加詞句標籤
+                    // 簡化詞句標籤（分組內不需要重複稀有度標示）
                     const phraseLabel = document.createElement('div');
                     phraseLabel.className = 'phrase-label';
-                    
-                    // 根據詞句長度設定不同的圖標和獎勵顯示
-                    let icon = '✨';
-                    let rarityText = '';
-                    if (group.phrase.length >= 4) {
-                        icon = '🌟';
-                        rarityText = '傳奇';
-                    } else if (group.phrase.length === 3) {
-                        icon = '⭐';
-                        rarityText = '稀有';
-                    } else {
-                        icon = '💫';
-                        rarityText = '基礎';
-                    }
-                    
-                    phraseLabel.innerHTML = `
-                        ${icon} ${group.phrase} 
-                        <span style="font-size: 0.8em; color: #8B6914; opacity: 0.8; margin-left: 5px;">
-                            (${rarityText})
-                        </span>
+                    phraseLabel.innerHTML = group.phrase;
+                    phraseLabel.style.cssText = `
+                        text-align: center;
+                        font-weight: bold;
+                        font-size: 0.9em;
+                        color: #B8860B;
+                        margin-bottom: 6px;
                     `;
                     phraseContainer.appendChild(phraseLabel);
                     
@@ -2359,8 +2422,25 @@ function gameOver() {
                     });
                     
                     phraseContainer.appendChild(charsContainer);
-                    listEl.appendChild(phraseContainer);
+                    phraseCardsContainer.appendChild(phraseContainer);
                 });
+                
+                rarityContainer.appendChild(phraseCardsContainer);
+                
+                // 添加動畫延遲
+                rarityContainer.style.animationDelay = `${groupIndex * 0.2}s`;
+                rarityContainer.style.opacity = '0';
+                rarityContainer.style.transform = 'translateY(-20px) scale(0.95)';
+                
+                setTimeout(() => {
+                    rarityContainer.style.opacity = '1';
+                    rarityContainer.style.transform = 'translateY(0) scale(1)';
+                    rarityContainer.style.transition = 'all 0.8s ease-out';
+                }, groupIndex * 200);
+                
+                listEl.appendChild(rarityContainer);
+                groupIndex++;
+            });
             
             // 然後顯示未組成詞句的字符 - 添加分組顯示
             const individualChars = ate.filter((ch, index) => !usedCharIndexes.has(index));
