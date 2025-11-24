@@ -290,8 +290,6 @@ window.Ending = (() => {
         const randomBlessing = getRandomBlessingByCategory(spiritualStat, completedPhrases);
         report += `💝 ${randomBlessing}\n\n`;
         
-        // 屬靈成長統計
-        report += `📊 本次收穫：${totalChars} 個字符，${totalGrowth} 點屬靈成長\n\n`;
         
         // 最高成長領域
         const maxGrowthArea = Object.entries(spiritualStat).reduce((max, [key, value]) => {

@@ -2265,9 +2265,27 @@ function gameOver() {
                 listEl.appendChild(summaryContainer);
             }
 
-            // 首先顯示完成的詞句分組
+            // 首先顯示完成的詞句分組 - 按稀有度分類排序
             Array.from(phraseGroups.values())
-                .sort((a, b) => b.bonus - a.bonus) // 按獎勵點數排序
+                .sort((a, b) => {
+                    // 定義稀有度權重
+                    const getRarityWeight = (phrase) => {
+                        if (phrase.length >= 4) return 3; // 傳奇級
+                        if (phrase.length === 3) return 2; // 稀有級
+                        return 1; // 基礎級
+                    };
+                    
+                    const weightA = getRarityWeight(a.phrase);
+                    const weightB = getRarityWeight(b.phrase);
+                    
+                    // 首先按稀有度排序（高稀有度優先）
+                    if (weightA !== weightB) {
+                        return weightB - weightA;
+                    }
+                    
+                    // 相同稀有度內按獎勵點數排序
+                    return b.bonus - a.bonus;
+                })
                 .forEach((group, index) => {
                     // 創建詞句分組容器
                     const phraseContainer = document.createElement('div');
