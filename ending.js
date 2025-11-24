@@ -285,19 +285,6 @@ window.Ending = (() => {
         
         let report = "";
         
-        // 添加詞句完成統計
-        if (completedPhrases.length > 0) {
-            report += "🎯 完成的美好詞句：\n";
-            completedPhrases.forEach(phrase => {
-                const specialBlessing = getPhraseBlessing(phrase);
-                report += `• ${phrase}`;
-                if (specialBlessing) {
-                    report += ` - ${specialBlessing}`;
-                }
-                report += "\n";
-            });
-            report += "\n";
-        }
         
         // 只顯示一句智能選擇的聖經經文祝福
         const randomBlessing = getRandomBlessingByCategory(spiritualStat, completedPhrases);
