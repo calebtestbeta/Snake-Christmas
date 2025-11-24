@@ -2252,7 +2252,6 @@ function gameOver() {
                     <div style="display: flex; justify-content: space-around; flex-wrap: wrap; gap: 10px; font-size: 0.9em;">
                         <span style="color: #333;">📝 總字符: <strong>${ate.length}</strong></span>
                         <span style="color: #333;">🎯 完成詞句: <strong>${completedPhrases.length}</strong></span>
-                        <span style="color: #333;">⭐ 總獎勵: <strong>${totalBonus}</strong></span>
                     </div>
                     ${phrasesByRarity.legendary > 0 || phrasesByRarity.rare > 0 || phrasesByRarity.common > 0 ? `
                         <div style="margin-top: 8px; font-size: 0.85em; color: #666;">
@@ -2309,7 +2308,7 @@ function gameOver() {
                     phraseLabel.innerHTML = `
                         ${icon} ${group.phrase} 
                         <span style="font-size: 0.8em; color: #8B6914; opacity: 0.8; margin-left: 5px;">
-                            (${rarityText} +${group.bonus})
+                            (${rarityText})
                         </span>
                     `;
                     phraseContainer.appendChild(phraseLabel);
@@ -2998,7 +2997,7 @@ function createShareOverlay() {
             🎄 聖誕貪食蛇成果 🎄
         </div>
         <div style="font-size: 1em; margin-bottom: 6px;">
-            📝 ${totalChars}字 · 🎯 ${completedCount}詞句 · ⭐ ${totalBonus}分
+            📝 ${totalChars}字 · 🎯 ${completedCount}詞句
         </div>
     `;
 
@@ -3104,8 +3103,7 @@ function generateShareText() {
     
     let shareText = `🎄 聖誕貪食蛇遊戲成果分享 🎄\n\n`;
     shareText += `📝 收集字符：${totalChars} 個\n`;
-    shareText += `🎯 完成詞句：${completedCount} 個\n`;
-    shareText += `⭐ 總獎勵分數：${totalBonus} 分\n\n`;
+    shareText += `🎯 完成詞句：${completedCount} 個\n\n`;
     
     if (completedPhrases && completedPhrases.length > 0) {
         shareText += `✨ 完成的聖誕祝福詞句：\n`;
