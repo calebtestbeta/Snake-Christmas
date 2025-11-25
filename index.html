@@ -1095,6 +1095,24 @@
             }
         }
 
+        /* iOS 設備影片播放優化 */
+        @supports (-webkit-touch-callout: none) {
+            /* iOS Safari 專用樣式 */
+            #demo-video {
+                -webkit-playsinline: true;
+                playsinline: true;
+            }
+            
+            /* iOS 提示文字樣式 */
+            .ios-fullscreen-hint {
+                background: rgba(255, 215, 0, 0.1);
+                border: 1px solid rgba(255, 215, 0, 0.3);
+                border-radius: 6px;
+                padding: 8px;
+                margin-top: 10px;
+            }
+        }
+
         /* 載入和錯誤狀態動畫 */
         #video-loading {
             animation: pulse 2s ease-in-out infinite;
@@ -2190,7 +2208,7 @@
                 </div>
                 
                 <!-- HTML5 Video播放器 -->
-                <video id="demo-video" controls style="width:100%; height:100%; display:block; object-fit:contain;" preload="metadata" poster="">
+                <video id="demo-video" controls playsinline webkit-playsinline style="width:100%; height:100%; display:block; object-fit:contain;" preload="metadata" poster="">
                     <source src="./christmas-snake-demo.mp4" type="video/mp4">
                     <source src="./christmas-snake-demo.webm" type="video/webm">
                     <p style="color:#FFD700; padding:20px; text-align:center;">
