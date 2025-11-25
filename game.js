@@ -3993,12 +3993,37 @@ function setupVideoDemo() {
         closeVideoModal();
     });
     
-    // 全螢幕按鈕點擊事件
+    // 全螢幕按鈕點擊事件 - iOS 優化
     if (videoFullscreenButton) {
-        videoFullscreenButton.addEventListener('click', (e) => {
-            e.preventDefault();
-            toggleVideoFullscreen();
-        });
+        // 檢測 iOS 設備
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+        
+        if (isIOS) {
+            // iOS 設備：隱藏全螢幕按鈕並顯示提示
+            videoFullscreenButton.style.display = 'none';
+            
+            // 添加 iOS 友善提示
+            const iosHint = document.createElement('div');
+            iosHint.style.cssText = `
+                color: #FFD700; 
+                font-size: 0.85em; 
+                text-align: center; 
+                margin-top: 10px; 
+                opacity: 0.8;
+                padding: 8px;
+                background: rgba(255, 215, 0, 0.1);
+                border: 1px solid rgba(255, 215, 0, 0.3);
+                border-radius: 6px;
+            `;
+            iosHint.textContent = '💡 點擊播放按鈕，iOS 將自動全螢幕顯示';
+            videoFullscreenButton.parentNode.appendChild(iosHint);
+        } else {
+            // 非 iOS 設備：正常全螢幕功能
+            videoFullscreenButton.addEventListener('click', (e) => {
+                e.preventDefault();
+                toggleVideoFullscreen();
+            });
+        }
     }
     
     // Modal 背景點擊關閉
