@@ -108,14 +108,17 @@ The game uses **P5.js** as its rendering engine with a modular Christmas-themed 
 
 ### File Structure & Dependencies
 
-- **index.html**: Main game interface with embedded styles and device detection
-- **game.js**: Core game logic, rendering, and state management  
+- **index.html**: Main game interface with embedded styles, device detection, and video demo modal
+- **game.js**: Core game logic, rendering, state management, and video demo system
 - **items.js**: Food data definitions (nutrition, effects, character pools)
 - **ending.js**: Game completion analysis and nutritional feedback system
+- **christmas-snake-demo.mp4**: Screen-recorded gameplay demonstration video
+- **工作人員指南.txt**: Staff guide for event management and phrase completion verification
 
 **External Dependencies**:
 - P5.js v1.9.0 (CDN)
 - Chart.js (CDN) for nutrition visualization
+- HTML5 Video API for demo playback
 
 ## Critical Implementation Details
 
@@ -182,6 +185,60 @@ The game prioritizes LINE SEED TW fonts with automatic fallback detection, optim
 - Multi-layer visual effects (stars, snowfall, lights) with automatic degradation on low-performance devices
 
 ## Recent Development History (v1.0 聖誕祝福版)
+
+### 2025-11-25 - 影片示範系統實作與工作人員指南優化
+
+#### 影片示範系統完整實作
+- **功能概述**: 新增「🎥 觀看遊戲示範」按鈕，提供完整的螢幕錄製遊戲示範
+- **技術架構**: 基於 HTML5 Video API 的 Modal 系統，支援 MP4/WebM 雙格式
+- **響應式設計**: 自適應各種設備螢幕尺寸，包含移動端優化
+- **使用者體驗**: 全螢幕播放功能、載入指示器、錯誤處理機制
+
+#### 核心功能特色
+
+**Modal 系統設計** (`index.html:2173-2227`):
+- 全螢幕遮罩背景，支援 `backdrop-filter: blur(3px)` 模糊效果
+- 聖誕主題視覺設計，金色邊框與漸層背景
+- 響應式佈局，支援橫豎屏自動調整
+
+**HTML5 影片播放器** (`setupVideoDemo()` in `game.js:3949+`):
+```javascript
+// 跨瀏覽器全螢幕支援
+if (demoVideo.requestFullscreen) {
+    demoVideo.requestFullscreen();
+} else if (demoVideo.webkitRequestFullscreen) {
+    demoVideo.webkitRequestFullscreen();
+}
+```
+
+**載入與錯誤處理系統**:
+- 動畫載入指示器配合播放狀態
+- 網路錯誤自動偵測與友善提示
+- 'canplay' 和 'loadeddata' 雙重載入事件監聽
+
+#### 工作人員指南現代化更新
+
+**分數系統移除** (配合遊戲簡化設計):
+- 移除所有分數相關描述與數值參考
+- 專注詞句完成機制與屬靈成長分析
+- 更新獎品發放檢查流程，以詞句達成為核心標準
+
+**內容結構優化**:
+- 簡化任務詞句列表，突出詞句本身意義
+- 更新結果檢查步驟，強調屬靈成長圖表功能
+- 調整工作人員教學重點，配合實際遊戲體驗
+
+#### 開發者工作流程改進
+
+**問題解決經驗**:
+- **Element ID 除錯**: 發現並修復 JavaScript 中 `video-close-button` vs `video-close-btn` ID 不匹配問題
+- **事件處理優化**: 實作完整的影片事件生命週期管理
+- **跨瀏覽器相容性**: 針對不同瀏覽器的全螢幕 API 提供 fallback 機制
+
+**效能考量**:
+- 影片 `preload="metadata"` 設定，平衡載入速度與頻寬消耗
+- Modal 顯示/隱藏動畫優化，使用 CSS transitions
+- 移動端觸控優化，確保按鈕可用性
 
 ### 2025-11-22 - iPhone 16 Plus Canvas 重疊問題修復
 
