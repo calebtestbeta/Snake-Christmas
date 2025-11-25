@@ -692,6 +692,8 @@ function setupGameButtons() {
         startButton.mousePressed(startGame);
     }
     
+    // 設置影片示範按鈕事件處理
+    setupVideoDemo();
 
     setupHelpButtons();
 }
@@ -3942,4 +3944,300 @@ function createComboEffect(combo) {
             style.parentNode.removeChild(style);
         }
     }, 1500);
+}
+
+// ===== 🎥 影片示範系統 =====
+//
+// 功能概述：
+// 1. 螢幕錄影影片播放系統
+// 2. Modal 彈窗式播放器
+// 3. 跨設備響應式設計
+// 4. 完整的事件處理和錯誤處理
+
+// 設置影片示範功能
+function setupVideoDemo() {
+    const videoDemoButton = document.getElementById('video-demo-button');
+    const videoModal = document.getElementById('video-demo-modal');
+    const videoCloseButton = document.getElementById('video-close-btn');
+    const videoFullscreenButton = document.getElementById('video-fullscreen-btn');
+    const demoVideo = document.getElementById('demo-video');
+    
+    // 詳細的元素檢查和調試信息
+    console.log('🔍 影片示範元素檢查:');
+    console.log('  - videoDemoButton:', !!videoDemoButton);
+    console.log('  - videoModal:', !!videoModal);
+    console.log('  - videoCloseButton:', !!videoCloseButton);
+    console.log('  - videoFullscreenButton:', !!videoFullscreenButton);
+    console.log('  - demoVideo:', !!demoVideo);
+    
+    if (!videoDemoButton || !videoModal || !videoCloseButton || !demoVideo) {
+        console.warn('⚠️ 影片示範元素不完整，無法初始化影片功能');
+        console.warn('缺少的元素:', {
+            videoDemoButton: !!videoDemoButton,
+            videoModal: !!videoModal,
+            videoCloseButton: !!videoCloseButton,
+            demoVideo: !!demoVideo
+        });
+        return;
+    }
+    
+    // 影片示範按鈕點擊事件
+    videoDemoButton.addEventListener('click', (e) => {
+        e.preventDefault();
+        openVideoModal();
+    });
+    
+    // 關閉按鈕點擊事件
+    videoCloseButton.addEventListener('click', (e) => {
+        e.preventDefault();
+        closeVideoModal();
+    });
+    
+    // 全螢幕按鈕點擊事件
+    if (videoFullscreenButton) {
+        videoFullscreenButton.addEventListener('click', (e) => {
+            e.preventDefault();
+            toggleVideoFullscreen();
+        });
+    }
+    
+    // Modal 背景點擊關閉
+    videoModal.addEventListener('click', (e) => {
+        if (e.target === videoModal) {
+            closeVideoModal();
+        }
+    });
+    
+    // ESC 鍵關閉
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && videoModal.style.display === 'flex') {
+            closeVideoModal();
+        }
+    });
+    
+    // 影片加載事件處理
+    demoVideo.addEventListener('loadstart', () => {
+        console.log('🎬 開始加載示範影片...');
+        showVideoLoadingIndicator();
+    });
+    
+    demoVideo.addEventListener('loadeddata', () => {
+        console.log('✅ 示範影片載入完成，準備播放');
+        hideVideoLoadingIndicator();
+    });
+    
+    demoVideo.addEventListener('canplay', () => {
+        console.log('✅ 示範影片可以開始播放');
+        hideVideoLoadingIndicator();
+    });
+    
+    demoVideo.addEventListener('error', (e) => {
+        console.error('❌ 影片加載失敗:', e);
+        hideVideoLoadingIndicator();
+        showVideoError();
+    });
+    
+    // 影片播放完成事件
+    demoVideo.addEventListener('ended', () => {
+        console.log('🎬 示範影片播放完成');
+        // 可以在這裡添加播放完成後的邏輯，如顯示開始遊戲提示
+    });
+    
+    console.log('✅ 影片示範系統初始化完成');
+}
+
+// 打開影片 Modal
+function openVideoModal() {
+    const videoModal = document.getElementById('video-demo-modal');
+    const demoVideo = document.getElementById('demo-video');
+    
+    if (!videoModal || !demoVideo) return;
+    
+    // 顯示 Modal
+    videoModal.style.display = 'flex';
+    
+    // 觸發淡入動畫
+    requestAnimationFrame(() => {
+        videoModal.style.opacity = '1';
+    });
+    
+    // 預加載影片但不自動播放
+    demoVideo.load();
+    
+    // 防止背景滾動
+    document.body.style.overflow = 'hidden';
+    
+    console.log('🎬 影片 Modal 已打開');
+}
+
+// 關閉影片 Modal
+function closeVideoModal() {
+    const videoModal = document.getElementById('video-demo-modal');
+    const demoVideo = document.getElementById('demo-video');
+    
+    if (!videoModal || !demoVideo) return;
+    
+    // 暫停影片並重置
+    demoVideo.pause();
+    demoVideo.currentTime = 0;
+    
+    // 淡出動畫
+    videoModal.style.opacity = '0';
+    
+    // 延遲隱藏以完成動畫
+    setTimeout(() => {
+        videoModal.style.display = 'none';
+    }, 300);
+    
+    // 恢復背景滾動
+    document.body.style.overflow = '';
+    
+    console.log('🎬 影片 Modal 已關閉');
+}
+
+// 顯示影片載入指示器
+function showVideoLoadingIndicator() {
+    const videoLoading = document.getElementById('video-loading');
+    if (videoLoading) {
+        videoLoading.style.display = 'flex';
+    }
+}
+
+// 隱藏影片載入指示器
+function hideVideoLoadingIndicator() {
+    const videoLoading = document.getElementById('video-loading');
+    if (videoLoading) {
+        videoLoading.style.display = 'none';
+    }
+}
+
+// 顯示影片加載狀態（按鈕）
+function showVideoLoadingState() {
+    const videoDemoButton = document.getElementById('video-demo-button');
+    if (videoDemoButton) {
+        videoDemoButton.innerHTML = '<span class="button-icon">⏳</span>載入影片中...';
+        videoDemoButton.disabled = true;
+    }
+}
+
+// 隱藏影片加載狀態（按鈕）
+function hideVideoLoadingState() {
+    const videoDemoButton = document.getElementById('video-demo-button');
+    if (videoDemoButton) {
+        videoDemoButton.innerHTML = '<span class="button-icon">🎥</span>觀看遊戲示範';
+        videoDemoButton.disabled = false;
+    }
+}
+
+// 顯示影片錯誤狀態
+function showVideoError() {
+    const videoContainer = document.querySelector('.video-container');
+    if (!videoContainer) return;
+    
+    // 創建錯誤訊息
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'video-error';
+    errorDiv.style.cssText = `
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: rgba(220, 53, 69, 0.9);
+        color: white;
+        padding: 20px;
+        border-radius: 10px;
+        text-align: center;
+        font-weight: bold;
+        z-index: 10;
+    `;
+    errorDiv.innerHTML = `
+        <div style="font-size: 2em; margin-bottom: 10px;">⚠️</div>
+        <div>影片載入失敗</div>
+        <div style="font-size: 0.9em; margin-top: 8px; opacity: 0.8;">
+            請檢查網路連線或稍後再試
+        </div>
+    `;
+    
+    videoContainer.appendChild(errorDiv);
+    
+    // 重置加載狀態
+    hideVideoLoadingState();
+    
+    console.error('❌ 顯示影片錯誤訊息');
+}
+
+// 全螢幕播放功能
+function toggleVideoFullscreen() {
+    const demoVideo = document.getElementById('demo-video');
+    if (!demoVideo) return;
+    
+    try {
+        if (!document.fullscreenElement) {
+            // 進入全螢幕
+            if (demoVideo.requestFullscreen) {
+                demoVideo.requestFullscreen();
+            } else if (demoVideo.webkitRequestFullscreen) {
+                // Safari 支援
+                demoVideo.webkitRequestFullscreen();
+            } else if (demoVideo.mozRequestFullScreen) {
+                // Firefox 支援
+                demoVideo.mozRequestFullScreen();
+            } else if (demoVideo.msRequestFullscreen) {
+                // IE/Edge 支援
+                demoVideo.msRequestFullscreen();
+            }
+            console.log('🔍 影片進入全螢幕模式');
+        } else {
+            // 退出全螢幕
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+            } else if (document.webkitExitFullscreen) {
+                document.webkitExitFullscreen();
+            } else if (document.mozCancelFullScreen) {
+                document.mozCancelFullScreen();
+            } else if (document.msExitFullscreen) {
+                document.msExitFullscreen();
+            }
+            console.log('🔍 影片退出全螢幕模式');
+        }
+    } catch (error) {
+        console.error('❌ 全螢幕操作失敗:', error);
+        // 如果全螢幕 API 不支援，顯示提示
+        showFullscreenUnsupportedMessage();
+    }
+}
+
+// 顯示全螢幕不支援提示
+function showFullscreenUnsupportedMessage() {
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: rgba(255, 193, 7, 0.95);
+        color: #000;
+        padding: 15px 20px;
+        border-radius: 10px;
+        font-weight: bold;
+        text-align: center;
+        z-index: 10001;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        animation: fadeInOut 3s ease-out forwards;
+    `;
+    
+    notification.innerHTML = `
+        <div style="font-size: 1.2em; margin-bottom: 5px;">⚠️</div>
+        <div>您的瀏覽器不支援全螢幕播放</div>
+        <div style="font-size: 0.9em; margin-top: 5px;">請手動點擊影片播放器的全螢幕按鈕</div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // 3秒後移除提示
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.parentNode.removeChild(notification);
+        }
+    }, 3000);
 }
