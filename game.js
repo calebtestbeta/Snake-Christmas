@@ -47,6 +47,8 @@ let gameBackgroundTransparent = true; // 使用透明背景讓CSS控制
 let previousScreen = 'START';
 let difficulty = 'easy';
 
+// 示範模式相關變數已移除
+
 // 連擊系統變數
 let comboCount = 0;
 let lastCharTime = 0;
@@ -126,6 +128,8 @@ const DIFFICULTY_SETTINGS = {
         color: '#F44336'
     }
 };
+
+// 示範模式腳本配置已移除
 
 // 實用工具函數
 const Utils = {
@@ -687,6 +691,7 @@ function setupGameButtons() {
     if (startButton) {
         startButton.mousePressed(startGame);
     }
+    
 
     setupHelpButtons();
 }
@@ -1607,6 +1612,8 @@ function draw() {
             console.log('遊戲狀態:', gameState);
         }
         
+        // 示範模式邏輯已移除
+        
         // 只有在遊戲進行中且未暫停才執行遊戲邏輯
         if (gameState === 'PLAYING' && !isPaused) {
             // 倒數 & HUD - 添加安全檢查
@@ -1717,7 +1724,23 @@ function draw() {
                         
                         // 獲取當前蛇頭顏色（根據變色狀態）
                         const currentColor = getCurrentSnakeHeadColor();
-                        const colors = ARROW_HEAD_COLORS[currentColor];
+                        const colors = ARROW_HEAD_COLORS[currentColor] || ARROW_HEAD_COLORS.default;
+                        
+                        // 安全檢查：確保顏色配置存在
+                        if (!colors || !colors.fill) {
+                            console.error('蛇頭顏色配置錯誤:', currentColor, colors);
+                            // 使用備用繪製方式
+                            fill(255, 215, 0); // 金色
+                            stroke(184, 134, 11); // 深金色
+                            strokeWeight(2);
+                            rect(s.x * cell + 2, s.y * cell + 2, cell - 4, cell - 4, 4);
+                            pop();
+                        } else {
+                        
+                        // 調試輸出：確認顏色值
+                        if (frameCount <= 5) {
+                            console.log('蛇頭繪製 - 顏色:', currentColor, 'RGB:', colors.fill);
+                        }
                         
                         // 繪製箭頭主體
                         fill(colors.fill[0], colors.fill[1], colors.fill[2]);
@@ -1764,6 +1787,7 @@ function draw() {
                         }
                         
                         pop();
+                        } // 結束 else 塊
                     } else {
                         // 蛇身：根據字詞類型顯示顏色
                         const charIndex = i - 1; // 修正索引計算：i=1對應collectedChars[0]
@@ -2998,6 +3022,7 @@ function debugVirtualButtons() {
 
 // 暴露到全域供調試使用
 window.debugVirtualButtons = debugVirtualButtons;
+
 
 // 調試函數：測試分享功能（不需要完整遊戲）
 window.testShareFunction = async function() {
