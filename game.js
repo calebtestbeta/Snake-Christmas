@@ -717,6 +717,12 @@ function setup() {
         // 啟用持續繪製以顯示動畫效果
         loop();
 
+        // 檢查並修復頁面載入時的滾動狀態
+        setTimeout(() => {
+            console.log('🔄 頁面載入完成，檢查滾動狀態...');
+            ScrollManager.autoFix();
+        }, 1000);
+
         console.log('遊戲初始化完成 - 聖誕夜空背景');
         validateGameConfig();
     } catch (error) {
@@ -2549,11 +2555,21 @@ function gameOver() {
             overEl.style.display = 'flex';
         }
 
+        // 確保結果頁面滾動可用 - 修復可能的滾動卡住問題
+        setTimeout(() => {
+            console.log('🔄 檢查結果頁面滾動狀態...');
+            const scrollFixed = ScrollManager.autoFix();
+            if (scrollFixed) {
+                console.log('✅ 結果頁面滾動問題已自動修復');
+            }
+        }, 200);
+
         // 延遲渲染圖表，確保DOM已更新
         setTimeout(() => {
             try {
                 renderNutritionChart();
                 setupShareButton(); // 設置分享按鈕事件監聽器
+                setupScrollFixButton(); // 設置滾動修復按鈕
             } catch (error) {
                 console.error('圖表渲染失敗:', error);
             }
@@ -3060,6 +3076,85 @@ window.testShareFunction = async function() {
     }
 };
 
+// ===== 🔧 滾動狀態管理系統 =====
+//
+// 功能概述：
+// 1. 統一管理頁面滾動狀態，防止影片 Modal 導致的滾動卡住問題
+// 2. 提供自動修復機制和手動修復選項
+// 3. 完整的錯誤處理和狀態恢復
+
+// 滾動狀態管理工具
+const ScrollManager = {
+    // 記錄原始滾動狀態
+    originalOverflow: null,
+    
+    // 禁用頁面滾動
+    disableScroll(reason = 'unknown') {
+        console.log(`🔒 禁用頁面滾動: ${reason}`);
+        // 記錄當前狀態
+        this.originalOverflow = document.body.style.overflow || '';
+        // 禁用滾動
+        document.body.style.overflow = 'hidden';
+    },
+    
+    // 恢復頁面滾動
+    enableScroll(reason = 'unknown') {
+        console.log(`🔓 恢復頁面滾動: ${reason}`);
+        // 恢復到原始狀態
+        document.body.style.overflow = this.originalOverflow || '';
+        // 清除記錄
+        this.originalOverflow = null;
+    },
+    
+    // 強制恢復滾動（緊急修復）
+    forceEnableScroll(reason = 'emergency') {
+        console.log(`⚡ 強制恢復頁面滾動: ${reason}`);
+        document.body.style.overflow = '';
+        document.body.style.overflowY = '';
+        document.body.style.overflowX = '';
+        this.originalOverflow = null;
+        
+        // 檢查是否成功恢復
+        const canScroll = this.checkScrollAvailable();
+        if (canScroll) {
+            console.log('✅ 滾動狀態已成功恢復');
+        } else {
+            console.warn('⚠️ 滾動狀態恢復可能不完整');
+        }
+        
+        return canScroll;
+    },
+    
+    // 檢查滾動是否可用
+    checkScrollAvailable() {
+        const bodyOverflow = window.getComputedStyle(document.body).overflow;
+        const bodyOverflowY = window.getComputedStyle(document.body).overflowY;
+        const htmlOverflow = window.getComputedStyle(document.documentElement).overflow;
+        
+        const scrollDisabled = bodyOverflow === 'hidden' || 
+                              bodyOverflowY === 'hidden' || 
+                              htmlOverflow === 'hidden';
+        
+        console.log(`📊 滾動狀態檢查: body.overflow=${bodyOverflow}, body.overflowY=${bodyOverflowY}, html.overflow=${htmlOverflow}`);
+        
+        return !scrollDisabled;
+    },
+    
+    // 自動修復滾動問題
+    autoFix() {
+        console.log('🔄 執行滾動狀態自動修復...');
+        
+        if (!this.checkScrollAvailable()) {
+            console.log('⚠️ 檢測到滾動問題，執行修復...');
+            this.forceEnableScroll('auto-fix');
+            return true;
+        } else {
+            console.log('✅ 滾動狀態正常，無需修復');
+            return false;
+        }
+    }
+};
+
 // ===== 📤 分享功能系統 (v2.0 - 遊戲畫布分享版) =====
 //
 // 功能概述：
@@ -3547,6 +3642,152 @@ function setupShareButton() {
     } else {
         console.warn('⚠️ 找不到分享按鈕元素');
     }
+}
+
+// 設置滾動修復按鈕事件監聽器
+function setupScrollFixButton() {
+    // 檢查是否需要顯示修復按鈕
+    const needsFixButton = !ScrollManager.checkScrollAvailable();
+    
+    if (needsFixButton) {
+        console.log('⚠️ 檢測到滾動問題，創建修復按鈕');
+        createScrollFixButton();
+    } else {
+        // 確保移除可能存在的修復按鈕
+        removeScrollFixButton();
+    }
+}
+
+// 創建滾動修復按鈕
+function createScrollFixButton() {
+    // 避免重複創建
+    if (document.getElementById('scroll-fix-button')) {
+        return;
+    }
+    
+    const fixButton = document.createElement('button');
+    fixButton.id = 'scroll-fix-button';
+    fixButton.innerHTML = '<span style="margin-right: 8px;">🔧</span>修復滾動';
+    fixButton.style.cssText = `
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: linear-gradient(45deg, #FF6B35, #FF8C42);
+        color: white;
+        border: none;
+        padding: 12px 20px;
+        border-radius: 25px;
+        font-size: 0.9em;
+        font-weight: bold;
+        cursor: pointer;
+        box-shadow: 0 4px 15px rgba(255, 107, 53, 0.4);
+        z-index: 10000;
+        transition: all 0.3s ease;
+        font-family: inherit;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        animation: fixButtonPulse 2s ease-in-out infinite;
+    `;
+    
+    // 添加動畫樣式
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes fixButtonPulse {
+            0% { 
+                box-shadow: 0 4px 15px rgba(255, 107, 53, 0.4);
+                transform: scale(1);
+            }
+            50% { 
+                box-shadow: 0 6px 20px rgba(255, 107, 53, 0.6);
+                transform: scale(1.05);
+            }
+            100% { 
+                box-shadow: 0 4px 15px rgba(255, 107, 53, 0.4);
+                transform: scale(1);
+            }
+        }
+    `;
+    document.head.appendChild(style);
+    
+    // 點擊事件處理
+    fixButton.addEventListener('click', (e) => {
+        e.preventDefault();
+        console.log('🔧 用戶點擊滾動修復按鈕');
+        
+        // 執行修復
+        const fixed = ScrollManager.forceEnableScroll('user-manual-fix');
+        
+        if (fixed) {
+            // 顯示成功提示
+            showScrollFixNotification('✅ 滾動已修復！現在可以正常瀏覽結果頁面了。');
+            
+            // 移除修復按鈕
+            setTimeout(() => {
+                removeScrollFixButton();
+            }, 2000);
+        } else {
+            // 顯示失敗提示
+            showScrollFixNotification('⚠️ 滾動修復可能不完整，請嘗試重新載入頁面。');
+        }
+    });
+    
+    // 懸停效果
+    fixButton.addEventListener('mouseenter', () => {
+        fixButton.style.background = 'linear-gradient(45deg, #FF8C42, #FFA500)';
+        fixButton.style.transform = 'translateY(-2px) scale(1.05)';
+    });
+    
+    fixButton.addEventListener('mouseleave', () => {
+        fixButton.style.background = 'linear-gradient(45deg, #FF6B35, #FF8C42)';
+        fixButton.style.transform = 'translateY(0) scale(1)';
+    });
+    
+    document.body.appendChild(fixButton);
+    console.log('✅ 滾動修復按鈕已創建');
+}
+
+// 移除滾動修復按鈕
+function removeScrollFixButton() {
+    const fixButton = document.getElementById('scroll-fix-button');
+    if (fixButton) {
+        fixButton.remove();
+        console.log('🗑️ 滾動修復按鈕已移除');
+    }
+}
+
+// 顯示滾動修復通知
+function showScrollFixNotification(message) {
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: rgba(34, 139, 34, 0.95);
+        color: white;
+        padding: 15px 20px;
+        border-radius: 10px;
+        font-size: 1em;
+        font-weight: bold;
+        text-align: center;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        pointer-events: none;
+        z-index: 10001;
+        animation: fadeInOut 3s ease-out forwards;
+        max-width: 90vw;
+        word-wrap: break-word;
+    `;
+    notification.textContent = message;
+    
+    document.body.appendChild(notification);
+    
+    // 3秒後移除通知
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.parentNode.removeChild(notification);
+        }
+    }, 3000);
 }
 
 // 設置說明頁按鈕
@@ -4090,7 +4331,7 @@ function openVideoModal() {
     demoVideo.load();
     
     // 防止背景滾動
-    document.body.style.overflow = 'hidden';
+    ScrollManager.disableScroll('video-modal-open');
     
     console.log('🎬 影片 Modal 已打開');
 }
@@ -4100,24 +4341,43 @@ function closeVideoModal() {
     const videoModal = document.getElementById('video-demo-modal');
     const demoVideo = document.getElementById('demo-video');
     
-    if (!videoModal || !demoVideo) return;
+    if (!videoModal || !demoVideo) {
+        // 即使元素不存在，也要確保恢復滾動
+        ScrollManager.forceEnableScroll('video-modal-close-fallback');
+        return;
+    }
     
-    // 暫停影片並重置
-    demoVideo.pause();
-    demoVideo.currentTime = 0;
-    
-    // 淡出動畫
-    videoModal.style.opacity = '0';
-    
-    // 延遲隱藏以完成動畫
-    setTimeout(() => {
-        videoModal.style.display = 'none';
-    }, 300);
-    
-    // 恢復背景滾動
-    document.body.style.overflow = '';
-    
-    console.log('🎬 影片 Modal 已關閉');
+    try {
+        // 暫停影片並重置
+        demoVideo.pause();
+        demoVideo.currentTime = 0;
+        
+        // 淡出動畫
+        videoModal.style.opacity = '0';
+        
+        // 延遲隱藏以完成動畫
+        setTimeout(() => {
+            videoModal.style.display = 'none';
+        }, 300);
+        
+        // 恢復背景滾動 - 使用新的滾動管理系統
+        ScrollManager.enableScroll('video-modal-close');
+        
+        // 雙重保險：延遲檢查滾動狀態
+        setTimeout(() => {
+            if (!ScrollManager.checkScrollAvailable()) {
+                console.warn('⚠️ 影片關閉後滾動未正確恢復，執行強制修復');
+                ScrollManager.forceEnableScroll('video-modal-close-delayed-fix');
+            }
+        }, 500);
+        
+        console.log('🎬 影片 Modal 已關閉');
+        
+    } catch (error) {
+        console.error('❌ 關閉影片 Modal 時發生錯誤:', error);
+        // 錯誤情況下強制恢復滾動
+        ScrollManager.forceEnableScroll('video-modal-close-error');
+    }
 }
 
 // 顯示影片載入指示器
