@@ -3234,6 +3234,51 @@ function createShareOverlay() {
     return overlay;
 }
 
+// 創建台北信友堂青年事工部 QR Code 疊加層
+function createQROverlay() {
+    const qrOverlay = document.createElement('div');
+    qrOverlay.id = 'qr-overlay';
+    
+    // 檢測設備類型以調整 QR Code 大小和位置
+    const isMobile = windowWidth <= GAME_CONFIG.MOBILE_BREAKPOINT;
+    const qrSize = isMobile ? '70px' : '80px';
+    const bottomPosition = isMobile ? '60px' : '80px';
+    const rightPosition = isMobile ? '15px' : '20px';
+    
+    qrOverlay.style.cssText = `
+        position: fixed;
+        right: ${rightPosition};
+        bottom: ${bottomPosition};
+        background: rgba(255, 255, 255, 0.95);
+        padding: 10px;
+        border-radius: 12px;
+        text-align: center;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        border: 2px solid rgba(255, 215, 0, 0.6);
+        z-index: 1001;
+        pointer-events: none;
+        backdrop-filter: blur(3px);
+    `;
+    
+    qrOverlay.innerHTML = `
+        <img src="hey_qr.png" 
+             style="width: ${qrSize}; height: ${qrSize}; display: block; border-radius: 6px;" 
+             alt="台北信友堂青年事工部 QR Code"
+             onerror="this.style.display='none'; this.parentNode.querySelector('.qr-fallback').style.display='block';">
+        <div style="font-size: 9px; color: #333; margin-top: 4px; font-weight: bold; line-height: 1.2;">
+            追蹤我們 IG
+        </div>
+        <div style="font-size: 8px; color: #666; margin-top: 2px; font-weight: 500; line-height: 1.1;">
+            @hey_youngadult
+        </div>
+        <div class="qr-fallback" style="display: none; font-size: 8px; color: #999; padding: 5px;">
+            QR Code 載入中...
+        </div>
+    `;
+    
+    return qrOverlay;
+}
+
 // 遊戲結果截圖生成功能 - 截圖遊戲畫布
 async function captureGameResult() {
     try {
@@ -3248,9 +3293,24 @@ async function captureGameResult() {
         // 創建文字疊加層
         const overlay = createShareOverlay();
         document.body.appendChild(overlay);
+        
+        // 創建 QR Code 疊加層
+        const qrOverlay = createQROverlay();
+        document.body.appendChild(qrOverlay);
 
-        // 等待元素渲染
-        await new Promise(resolve => setTimeout(resolve, 100));
+        // 等待元素渲染和圖片載入
+        await new Promise(resolve => setTimeout(resolve, 200));
+        
+        // 確保 QR Code 圖片完全載入
+        const qrImage = qrOverlay.querySelector('img');
+        if (qrImage && !qrImage.complete) {
+            await new Promise((resolve) => {
+                qrImage.onload = resolve;
+                qrImage.onerror = resolve; // 即使載入失敗也繼續
+                // 設置超時以防圖片載入卡住
+                setTimeout(resolve, 1000);
+            });
+        }
 
         // 計算遊戲區域範圍，包含所有視覺效果和控制按鈕
         const gameCanvasRect = gameCanvas.getBoundingClientRect();
@@ -3296,14 +3356,21 @@ async function captureGameResult() {
         if (overlay.parentNode) {
             overlay.parentNode.removeChild(overlay);
         }
+        if (qrOverlay.parentNode) {
+            qrOverlay.parentNode.removeChild(qrOverlay);
+        }
         
         console.log('✅ 遊戲畫布截圖生成成功');
         return canvas;
     } catch (error) {
-        // 確保清理疊加層
+        // 確保清理所有疊加層
         const overlay = document.getElementById('share-overlay');
         if (overlay && overlay.parentNode) {
             overlay.parentNode.removeChild(overlay);
+        }
+        const qrOverlay = document.getElementById('qr-overlay');
+        if (qrOverlay && qrOverlay.parentNode) {
+            qrOverlay.parentNode.removeChild(qrOverlay);
         }
         
         console.error('❌ 截圖生成失敗:', error);
