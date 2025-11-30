@@ -2069,6 +2069,125 @@
                 margin: 80px auto 130px auto;  /* 桌面版為聖誕燈預留充足空間 */
             }
         }
+
+        /* QR Code 光效動畫 */
+        @keyframes qrShimmer {
+            0% { left: -100%; }
+            50% { left: -100%; }
+            100% { left: 100%; }
+        }
+
+        /* QR Code 互動按鈕效果 */
+        a[href*="hey_youngadult"]:hover #end-qr-code {
+            transform: scale(1.05);
+            border-color: rgba(255, 215, 0, 0.8) !important;
+            box-shadow: 
+                0 6px 20px rgba(255, 215, 0, 0.4),
+                0 0 15px rgba(255, 215, 0, 0.3) !important;
+            background: linear-gradient(135deg, 
+                rgba(255, 255, 255, 0.95), 
+                rgba(255, 255, 255, 0.85)) !important;
+        }
+
+        a[href*="hey_youngadult"]:active #end-qr-code {
+            transform: scale(0.98);
+            transition: all 0.1s ease;
+            box-shadow: 
+                0 2px 8px rgba(255, 215, 0, 0.3),
+                inset 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+        }
+
+        /* QR Code 懸停時的文字效果 */
+        a[href*="hey_youngadult"]:hover #end-qr-code div[style*="color: #B8860B"] span {
+            color: #DAA520 !important;
+            animation: pointingPulse 1s ease-in-out infinite;
+        }
+
+        /* 指向動畫 */
+        @keyframes pointingPulse {
+            0%, 100% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.1); opacity: 1; }
+        }
+
+        /* 確保連結在各種狀態下都無裝飾 */
+        a[href*="hey_youngadult"] {
+            text-decoration: none !important;
+            color: inherit !important;
+        }
+
+        a[href*="hey_youngadult"]:visited {
+            color: inherit !important;
+        }
+
+        /* QR Code 響應式設計 */
+        @media (max-width: 480px) {
+            #end-qr-code {
+                margin-top: 15px !important;
+                padding: 12px !important;
+                border-radius: 12px !important;
+            }
+            
+            /* 移動端觸控優化 */
+            a[href*="hey_youngadult"] {
+                -webkit-tap-highlight-color: rgba(255, 215, 0, 0.2);
+                touch-action: manipulation;
+            }
+            
+            /* 移動端觸控反饋 */
+            a[href*="hey_youngadult"]:active #end-qr-code {
+                transform: scale(0.95);
+                background: linear-gradient(135deg, 
+                    rgba(255, 215, 0, 0.1), 
+                    rgba(255, 255, 255, 0.9)) !important;
+                border-color: rgba(255, 215, 0, 0.9) !important;
+            }
+            
+            #end-qr-code img {
+                width: 60px !important;
+                height: 60px !important;
+                border-radius: 8px !important;
+            }
+            
+            #end-qr-code div[style*="font-size: 16px"] {
+                font-size: 14px !important;
+            }
+            
+            #end-qr-code div[style*="font-size: 14px"] {
+                font-size: 12px !important;
+            }
+            
+            #end-qr-code div[style*="font-size: 13px"] {
+                font-size: 11px !important;
+            }
+            
+            #end-qr-code div[style*="gap: 15px"] {
+                gap: 10px !important;
+            }
+        }
+
+        @media (max-width: 320px) {
+            #end-qr-code {
+                margin-top: 12px !important;
+                padding: 10px !important;
+            }
+            
+            #end-qr-code img {
+                width: 50px !important;
+                height: 50px !important;
+            }
+            
+            #end-qr-code div[style*="font-size: 14px"] {
+                font-size: 12px !important;
+            }
+            
+            #end-qr-code div[style*="font-size: 12px"] {
+                font-size: 10px !important;
+            }
+            
+            #end-qr-code div[style*="font-size: 11px"] {
+                font-size: 9px !important;
+            }
+        }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/p5@1.9.0/lib/p5.min.js"></script>
     <script src="./items.js"></script>
@@ -2276,6 +2395,40 @@
                 <button id="share-result-button"><span class="button-icon">📤</span>分享成果</button>
                 <button id="help-from-end-button" class="secondary-button">📖 字符祝福說明</button>
             </div>
+            
+            <!-- QR Code 區域 - 台北信友堂青年事工部 (可點擊訪問) -->
+            <a href="https://www.instagram.com/hey_youngadult/" 
+               target="_blank" 
+               rel="noopener noreferrer" 
+               aria-label="點擊訪問台北信友堂青年事工部 Instagram"
+               style="text-decoration: none; display: block;">
+                <div id="end-qr-code" style="margin-top: 20px; text-align: center; padding: 15px; background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.7)); border-radius: 15px; border: 2px solid rgba(255, 215, 0, 0.4); box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); position: relative; overflow: hidden; cursor: pointer; transition: all 0.3s ease;">
+                    <div style="display: flex; align-items: center; justify-content: center; gap: 15px; flex-wrap: wrap;">
+                        <img src="hey_qr.png" 
+                             style="width: 80px; height: 80px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);" 
+                             alt="台北信友堂青年事工部 QR Code"
+                             onerror="this.style.display='none'; this.parentNode.querySelector('.qr-fallback').style.display='flex';">
+                        <div style="text-align: left; color: #333;">
+                            <div style="font-size: 16px; font-weight: bold; color: #B8860B; margin-bottom: 4px; display: flex; align-items: center; gap: 5px;">
+                                ✨ 追蹤我們的青年事工 <span style="font-size: 12px; color: #999;">👆 點擊訪問</span>
+                            </div>
+                            <div style="font-size: 14px; color: #666; margin-bottom: 2px;">
+                                台北信友堂青年事工部
+                            </div>
+                            <div style="font-size: 13px; color: #888; font-family: monospace;">
+                                @hey_youngadult
+                            </div>
+                        </div>
+                        <div class="qr-fallback" style="display: none; justify-content: center; align-items: center; flex-direction: column; color: #666; font-size: 14px; padding: 10px;">
+                            <div style="font-size: 24px; margin-bottom: 5px;">📱</div>
+                            <div>QR Code 載入中...</div>
+                        </div>
+                    </div>
+                    
+                    <!-- 裝飾性光效 -->
+                    <div style="position: absolute; top: -2px; left: -100%; width: 100%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255, 215, 0, 0.1), transparent); animation: qrShimmer 3s ease-in-out infinite;"></div>
+                </div>
+            </a>
         </div>
     </div>
     <script src="./game.js"></script>
