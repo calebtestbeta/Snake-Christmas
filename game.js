@@ -3351,7 +3351,7 @@ function generateShareText() {
     }
     
     shareText += `🎮 一起來挑戰聖誕貪食蛇，收集聖誕祝福吧！\n`;
-    shareText += `🔗 ${window.location.href}`;
+    shareText += `🔗 https://pse.is/8ea8hc`;
     
     return shareText;
 }
