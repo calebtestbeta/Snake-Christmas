@@ -4234,14 +4234,18 @@ function setupVideoDemo() {
         closeVideoModal();
     });
     
-    // 全螢幕按鈕點擊事件 - iOS 優化
+    // 全螢幕按鈕點擊事件 - 跨平台優化
     if (videoFullscreenButton) {
         // 檢測 iOS 設備
         const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
         
         if (isIOS) {
-            // iOS 設備：隱藏全螢幕按鈕並顯示提示
-            videoFullscreenButton.style.display = 'none';
+            // iOS 設備：保留全螢幕按鈕，但添加特殊處理
+            videoFullscreenButton.addEventListener('click', (e) => {
+                e.preventDefault();
+                // iOS 上觸發原生全螢幕
+                triggerIOSFullscreen(demoVideo);
+            });
             
             // 添加 iOS 友善提示
             const iosHint = document.createElement('div');
@@ -4256,7 +4260,7 @@ function setupVideoDemo() {
                 border: 1px solid rgba(255, 215, 0, 0.3);
                 border-radius: 6px;
             `;
-            iosHint.textContent = '💡 點擊播放按鈕，iOS 將自動全螢幕顯示';
+            iosHint.textContent = '💡 iOS 將自動以全螢幕播放影片';
             videoFullscreenButton.parentNode.appendChild(iosHint);
         } else {
             // 非 iOS 設備：正常全螢幕功能
@@ -4303,11 +4307,29 @@ function setupVideoDemo() {
         showVideoError();
     });
     
+    // 影片播放事件監聽 - iOS 自動全螢幕支援
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    
+    demoVideo.addEventListener('play', () => {
+        console.log('🎬 影片開始播放');
+        
+        // iOS 設備自動進入全螢幕 (如果支援)
+        if (isIOS) {
+            // 延遲觸發全螢幕，確保播放已開始
+            setTimeout(() => {
+                triggerIOSFullscreen(demoVideo);
+            }, 100);
+        }
+    });
+    
     // 影片播放完成事件
     demoVideo.addEventListener('ended', () => {
         console.log('🎬 示範影片播放完成');
         // 可以在這裡添加播放完成後的邏輯，如顯示開始遊戲提示
     });
+    
+    // 執行跨平台兼容性設置
+    handleCrossPlatformVideoCompatibility();
     
     console.log('✅ 影片示範系統初始化完成');
 }
@@ -4451,7 +4473,34 @@ function showVideoError() {
     console.error('❌ 顯示影片錯誤訊息');
 }
 
-// 全螢幕播放功能
+// iOS 全螢幕播放專用函數
+function triggerIOSFullscreen(videoElement) {
+    if (!videoElement) return;
+    
+    try {
+        console.log('🍎 嘗試觸發 iOS 全螢幕播放');
+        
+        // iOS Safari 特殊的全螢幕 API
+        if (videoElement.webkitEnterFullscreen) {
+            videoElement.webkitEnterFullscreen();
+            console.log('✅ iOS webkitEnterFullscreen 成功觸發');
+        } else if (videoElement.requestFullscreen) {
+            videoElement.requestFullscreen().then(() => {
+                console.log('✅ iOS requestFullscreen 成功觸發');
+            }).catch(error => {
+                handleFullscreenError(error);
+            });
+        } else {
+            console.log('ℹ️ iOS 將使用原生全螢幕播放行為');
+            // iOS 預設會全螢幕播放影片，不需要特殊處理
+        }
+    } catch (error) {
+        console.log('ℹ️ iOS 全螢幕 API 調用異常，將使用原生行為:', error.message);
+        // 不顯示錯誤給用戶，因為 iOS 會自動處理
+    }
+}
+
+// 全螢幕播放功能 (非 iOS 設備)
 function toggleVideoFullscreen() {
     const demoVideo = document.getElementById('demo-video');
     if (!demoVideo) return;
@@ -4492,7 +4541,56 @@ function toggleVideoFullscreen() {
     }
 }
 
-// 顯示全螢幕不支援提示
+// 跨平台兼容性檢查與處理
+function handleCrossPlatformVideoCompatibility() {
+    const userAgent = navigator.userAgent.toLowerCase();
+    const demoVideo = document.getElementById('demo-video');
+    
+    if (!demoVideo) return;
+    
+    // 平台檢測
+    const isIOS = /ipad|iphone|ipod/.test(userAgent);
+    const isAndroid = /android/.test(userAgent);
+    const isSafari = /safari/.test(userAgent) && !/chrome/.test(userAgent);
+    const isChrome = /chrome/.test(userAgent);
+    
+    console.log(`🔧 影片平台兼容性檢查: iOS=${isIOS}, Android=${isAndroid}, Safari=${isSafari}, Chrome=${isChrome}`);
+    
+    // 根據平台設置不同的影片屬性
+    if (isIOS) {
+        // iOS: 移除 playsinline，允許原生全螢幕行為
+        demoVideo.removeAttribute('playsinline');
+        demoVideo.removeAttribute('webkit-playsinline');
+        console.log('🍎 iOS 設置：允許原生全螢幕播放');
+    } else if (isAndroid) {
+        // Android: 保持控制內嵌播放，但支援手動全螢幕
+        demoVideo.setAttribute('playsinline', 'true');
+        console.log('🤖 Android 設置：內嵌播放 + 手動全螢幕選項');
+    } else {
+        // Desktop: 標準設置
+        demoVideo.setAttribute('playsinline', 'true');
+        console.log('🖥️ Desktop 設置：標準播放控制');
+    }
+}
+
+// 全螢幕錯誤處理與降級機制
+function handleFullscreenError(error) {
+    console.log('⚠️ 全螢幕請求失敗:', error.message);
+    
+    const userAgent = navigator.userAgent.toLowerCase();
+    const isIOS = /ipad|iphone|ipod/.test(userAgent);
+    
+    if (isIOS) {
+        // iOS 上的全螢幕失敗通常是正常的，不需要顯示錯誤
+        console.log('ℹ️ iOS 全螢幕 API 調用失敗是正常現象，Safari 會使用原生全螢幕行為');
+        return;
+    }
+    
+    // 非 iOS 設備才顯示錯誤提示
+    showFullscreenUnsupportedMessage();
+}
+
+// 顯示全螢幕不支援提示 (僅非 iOS 設備)
 function showFullscreenUnsupportedMessage() {
     const notification = document.createElement('div');
     notification.style.cssText = `

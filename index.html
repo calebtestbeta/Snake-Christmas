@@ -1097,10 +1097,9 @@
 
         /* iOS 設備影片播放優化 */
         @supports (-webkit-touch-callout: none) {
-            /* iOS Safari 專用樣式 */
+            /* iOS Safari 專用樣式 - 允許原生全螢幕播放 */
             #demo-video {
-                -webkit-playsinline: true;
-                playsinline: true;
+                /* 移除 playsinline 屬性，讓 iOS 使用預設的全螢幕播放行為 */
             }
             
             /* iOS 提示文字樣式 */
@@ -2208,7 +2207,7 @@
                 </div>
                 
                 <!-- HTML5 Video播放器 -->
-                <video id="demo-video" controls playsinline webkit-playsinline style="width:100%; height:100%; display:block; object-fit:contain;" preload="metadata" poster="">
+                <video id="demo-video" controls style="width:100%; height:100%; display:block; object-fit:contain;" preload="metadata" poster="">
                     <source src="./christmas-snake-demo.mp4" type="video/mp4">
                     <source src="./christmas-snake-demo.webm" type="video/webm">
                     <p style="color:#FFD700; padding:20px; text-align:center;">
